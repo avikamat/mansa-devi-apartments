@@ -199,10 +199,10 @@ months.forEach(m=>{let o=document.createElement('option');o.value=m;o.textConten
 
 const floorSelect=document.getElementById('floorSelect');
 for(let f=1;f<=totalFloors;f++){let o=document.createElement('option');o.value=f;o.textContent=`Floor ${f}`;floorSelect.appendChild(o);} 
-// ---------- Supabase DB helpers (insert these) ----------
+// ---------- Supabase DB helpers (correct) ----------
 async function loadFromDB(month) {
   const { data: rows, error } = await window.supabase
-    .from('maintenance')
+    .from('payments')
     .select('*')
     .eq('month', month);
 
@@ -221,12 +221,13 @@ async function saveToDB(flat, month, count, floor) {
   const payload = { flat: String(flat), month: String(month), floor: Number(floor), count: Number(count) };
 
   const { error } = await window.supabase
-    .from('maintenance')
+    .from('payments')
     .upsert(payload, { onConflict: ['flat','month','floor'] });
 
   if (error) console.error("Supabase save error:", error);
 }
 // ---------- end DB helpers ----------
+
 
 async function resetPayments(){
   let m = monthSelect.value;
@@ -324,6 +325,7 @@ monthSelect.value=months[new Date().getMonth()];floorSelect.value=1;resetPayment
 </script>
 </body>
 </html>
+
 
 
 
