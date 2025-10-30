@@ -169,7 +169,20 @@ const monthSelect=document.getElementById('monthSelect');
 months.forEach(m=>{let o=document.createElement('option');o.value=m;o.textContent=m;monthSelect.appendChild(o);});
 
 const floorSelect=document.getElementById('floorSelect');
-for(let f=1;f<=totalFloors;f++){let o=document.createElement('option');o.value=f;o.textContent=`Floor ${f}`;floorSelect.appendChild(o);} 
+// Add Ground Floor
+let g = document.createElement('option');
+g.value = 0;
+g.textContent = "Ground";
+floorSelect.appendChild(g);
+
+// Add Floors 1 to 24
+for(let f=1;f<=totalFloors;f++){
+  let o=document.createElement('option');
+  o.value=f;
+  o.textContent=`Floor ${f}`;
+  floorSelect.appendChild(o);
+}
+ 
 // ---------- Supabase DB helpers (correct) ----------
 async function loadFromDB(month) {
   const { data: rows, error } = await supabase
@@ -224,7 +237,12 @@ async function loadFloor(){
 if (!data[month]) data[month] = {};
 
 for (let n = 1; n <= flatsPerFloor; n++) {
-  const flat = `${String(floor).padStart(2,'0')}${String(n).padStart(2,'0')}`;
+  let flat;
+if (floor == 0) {
+  flat = `G${String(n).padStart(2,'0')}`; 
+} else {
+  flat = `${String(floor).padStart(2,'0')}${String(n).padStart(2,'0')}`;
+}
 
   // If no record exists in memory, create default
   if (data[month][flat] === undefined || data[month][flat] === null) {
@@ -237,7 +255,13 @@ for (let n = 1; n <= flatsPerFloor; n++) {
   let floorTotal = 0;
 
   for (let n = 1; n <= flatsPerFloor; n++) {
-    const flat = `${String(floor).padStart(2,'0')}${String(n).padStart(2,'0')}`;
+    let flat;
+if (floor == 0) {
+  flat = `G${String(n).padStart(2,'0')}`; 
+} else {
+  flat = `${String(floor).padStart(2,'0')}${String(n).padStart(2,'0')}`;
+}
+
     const countVal = Number(data[month][flat] || 0);
     const paidAmount = countVal * fee;
     const isPaid = paidAmount > 0;
@@ -306,10 +330,14 @@ let y=20;doc.text("Flat No",10,y);doc.text("Status",50,y);y+=8;doc.line(10,y,200
 Object.keys(monthData).sort().forEach(flat=>{const status=monthData[flat]?"Paid ✅":"Pending ❌";doc.text(flat,10,y);doc.text(status,50,y);y+=7;if(y>280){doc.addPage();y=20;}});
 doc.save(`Maintenance-${month}.pdf`);}
 
-monthSelect.value=months[new Date().getMonth()];floorSelect.value=1;resetPayments();
+monthSelect.value=months[new Date().getMonth()];
+floorSelect.value=0;
+resetPayments();
+
 </script>
 </body>
 </html>
+
 
 
 
