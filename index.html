@@ -243,7 +243,7 @@ function updateTotals(){const month=monthSelect.value;let total=0;if(data[month]
 
 function openLogin(){document.getElementById('loginModal').classList.remove('hidden');}
 function closeLogin(){document.getElementById('loginModal').classList.add('hidden');}
-function checkLogin(){if(document.getElementById('adminPass').value==="admin123"){loggedIn=true;closeLogin();document.getElementById('loginBtn').classList.add('hidden');document.getElementById('logoutBtn').classList.remove('hidden');loadFloor();}else alert("Wrong password");}
+function checkLogin(){if(document.getElementById('adminPass').value==="mansa1812"){loggedIn=true;closeLogin();document.getElementById('loginBtn').classList.add('hidden');document.getElementById('logoutBtn').classList.remove('hidden');loadFloor();}else alert("Wrong password");}
 function logout(){loggedIn=false;document.getElementById('logoutBtn').classList.add('hidden');document.getElementById('loginBtn').classList.remove('hidden');loadFloor();}
 
 async function exportPDF(){const {jsPDF}=window.jspdf;const doc=new jsPDF();const month=monthSelect.value;const monthData=data[month]||{};doc.setFontSize(16);doc.text(`Maintenance Report - ${month}`,10,10);doc.setFontSize(12);
@@ -255,3 +255,4 @@ monthSelect.value=months[new Date().getMonth()];floorSelect.value=1;resetPayment
 </script>
 </body>
 </html>
+
