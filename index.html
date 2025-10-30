@@ -172,7 +172,8 @@ const floorSelect=document.getElementById('floorSelect');
 for(let f=1;f<=totalFloors;f++){let o=document.createElement('option');o.value=f;o.textContent=`Floor ${f}`;floorSelect.appendChild(o);} 
 // ---------- Supabase DB helpers (correct) ----------
 async function loadFromDB(month) {
-  const { data: rows, error } = await window.supabase
+  const { data: rows, error } = await supabase
+
     .from('payments')
     .select('*')
     .eq('month', month);
@@ -191,7 +192,8 @@ async function loadFromDB(month) {
 async function saveToDB(flat, month, count, floor) {
   const payload = { flat: String(flat), month: String(month), floor: Number(floor), count: Number(count) };
 
-  const { error } = await window.supabase
+  const { error } = await supabase
+
     .from('payments')
     .upsert(payload, { onConflict: ['flat','month','floor'] });
 
@@ -308,6 +310,7 @@ monthSelect.value=months[new Date().getMonth()];floorSelect.value=1;resetPayment
 </script>
 </body>
 </html>
+
 
 
 
