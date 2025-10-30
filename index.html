@@ -153,7 +153,7 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // Load data from Supabase
 async function loadFromDB(month) {
   let { data: rows } = await supabase
-    .from('maintenance')
+    .from('payments')
     .select('*')
     .eq('month', month);
   if (!rows) return;
@@ -165,11 +165,22 @@ async function loadFromDB(month) {
 }
 
 // Save change to Supabase
-async function saveToDB(flat, month, status) {
-  await supabase
-    .from('maintenance')
-    .upsert({ flat, month, status });
+async function saveToDB(flat, month, count, floor) {
+  const payload = { 
+    flat: String(flat), 
+    month: String(month), 
+    floor: Number(floor), 
+    count: Number(count) 
+  };
+
+  const { error } = await window.supabase
+    .from('payments')
+    .upsert(payload, { onConflict: ['flat','month','floor'] });
+
+  if (error) console.error("Supabase save error:", error);
 }
+
+ 
 </script>
 
 <script>
@@ -283,8 +294,8 @@ async function togglePaid(flat) {
 
 
   // save to online DB
-  await saveToDB(flat, month, newStatus ? "paid" : "pending");
-}
+
+
 
 async function updateTotals(){
   const month = monthSelect.value;
@@ -313,5 +324,6 @@ monthSelect.value=months[new Date().getMonth()];floorSelect.value=1;resetPayment
 </script>
 </body>
 </html>
+
 
 
