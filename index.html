@@ -188,6 +188,34 @@ months.forEach(m=>{let o=document.createElement('option');o.value=m;o.textConten
 
 const floorSelect=document.getElementById('floorSelect');
 for(let f=1;f<=totalFloors;f++){let o=document.createElement('option');o.value=f;o.textContent=`Floor ${f}`;floorSelect.appendChild(o);} 
+// ---------- Supabase DB helpers (insert these) ----------
+async function loadFromDB(month) {
+  const { data: rows, error } = await window.supabase
+    .from('maintenance')
+    .select('*')
+    .eq('month', month);
+
+  if (error) {
+    console.error("Supabase load error:", error);
+    return;
+  }
+
+  data[month] = {};
+  rows.forEach(r => {
+    data[month][String(r.flat)] = Number(r.count) || 0;
+  });
+}
+
+async function saveToDB(flat, month, count, floor) {
+  const payload = { flat: String(flat), month: String(month), floor: Number(floor), count: Number(count) };
+
+  const { error } = await window.supabase
+    .from('maintenance')
+    .upsert(payload, { onConflict: ['flat','month','floor'] });
+
+  if (error) console.error("Supabase save error:", error);
+}
+// ---------- end DB helpers ----------
 
 async function resetPayments(){
   let m = monthSelect.value;
@@ -199,47 +227,77 @@ async function resetPayments(){
   updateTotals();
 }
 
-function loadFloor(){
-  const month=monthSelect.value;
-  if(!data[month])data[month] = {};
-  const floor=parseInt(floorSelect.value);
-  const flatsContainer=document.getElementById('flatsContainer');
-  flatsContainer.innerHTML='';
+async function loadFloor(){
+  const month = monthSelect.value;
+  const floor = floorSelect.value;
 
-  let paid=0,floorTotal=0;
+  await loadFromDB(month);
 
-  for(let n=1;n<=flatsPerFloor;n++){
-    const flat=`${String(floor).padStart(2,'0')}${String(n).padStart(2,'0')}`;
-    const isPaid=data[month][flat]===true;
-    if(isPaid){paid++;floorTotal+=fee;}
+  const flatsContainer = document.getElementById('flatsContainer');
+  flatsContainer.innerHTML = '';
 
-    flatsContainer.innerHTML+=`
-      <button onclick="togglePaid('${flat}')" class="p-3 rounded font-bold text-sm shadow text-white ${isPaid?'bg-green-600':'bg-red-600'} ${loggedIn?'':'opacity-40 cursor-not-allowed'}">
-        ${flat}<br>${isPaid?'✅ Paid / जमा':'❌ Pending / बाकी'}
+  let paid = 0;
+  let floorTotal = 0;
+
+  for (let n = 1; n <= flatsPerFloor; n++) {
+    const flat = `${String(floor).padStart(2,'0')}${String(n).padStart(2,'0')}`;
+    const countVal = Number(data[month][flat] || 0);
+    const paidAmount = countVal * fee;
+    const isPaid = paidAmount > 0;
+
+    if (isPaid) { paid++; floorTotal += paidAmount; }
+
+    flatsContainer.innerHTML += `
+      <button onclick="togglePaid('${flat}')"
+        class="p-3 rounded font-bold text-sm shadow text-white ${isPaid ? 'bg-green-600' : 'bg-red-600'} ${loggedIn ? '' : 'opacity-40 cursor-not-allowed'}">
+        ${flat}<br>${isPaid ? '✅ Paid ₹' + paidAmount : '❌ Pending / बाकी'}
       </button>`;
   }
 
-  document.getElementById('paidCount').textContent=paid;
-  document.getElementById('pendingCount').textContent=flatsPerFloor-paid;
-  document.getElementById('floorTotal').textContent=floorTotal;
+  document.getElementById('paidCount').textContent = paid;
+  document.getElementById('pendingCount').textContent = flatsPerFloor - paid;
+  document.getElementById('floorTotal').textContent = floorTotal;
+
   updateTotals();
 }
 
-async function togglePaid(flat){
-  if(!loggedIn) return alert("Login required");
+
+async function togglePaid(flat) {
+  if (!loggedIn) return alert("Login required");
 
   const month = monthSelect.value;
-  const newStatus = !data[month][flat];
+  const floor = floorSelect.value;
 
-  data[month][flat] = newStatus;
-  saveData();
+  if (!data[month]) data[month] = {};
+
+  let current = Number(data[month][flat] || 0);
+  current = current + 1;
+  if (current > 5) current = 0; // cycles after 5 -> reset
+
+  data[month][flat] = current;
+  try { saveData(); } catch(e){}
+
+  await saveToDB(flat, month, current, floor);
   loadFloor();
+}
+
 
   // save to online DB
   await saveToDB(flat, month, newStatus ? "paid" : "pending");
 }
 
-function updateTotals(){const month=monthSelect.value;let total=0;if(data[month])Object.values(data[month]).forEach(p=>{if(p)total+=fee;});document.getElementById('totalCollection').textContent=total;}
+async function updateTotals(){
+  const month = monthSelect.value;
+  if (!data[month]) await loadFromDB(month);
+
+  let total = 0;
+  Object.values(data[month] || {}).forEach(count => {
+    total += (Number(count) || 0) * fee;
+  });
+
+  document.getElementById('totalCollection').textContent = total;
+}
+
 
 function openLogin(){document.getElementById('loginModal').classList.remove('hidden');}
 function closeLogin(){document.getElementById('loginModal').classList.add('hidden');}
@@ -255,4 +313,5 @@ monthSelect.value=months[new Date().getMonth()];floorSelect.value=1;resetPayment
 </script>
 </body>
 </html>
+
 
