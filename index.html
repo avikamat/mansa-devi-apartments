@@ -218,12 +218,18 @@ async function loadFloor(){
 
   const flatsContainer = document.getElementById('flatsContainer');
   flatsContainer.innerHTML = '';
-// If DB has no entries for this month+floor yet, initialize 20 flats
+// Always initialize 20 flats per floor, even if DB empty
 if (!data[month]) data[month] = {};
+
 for (let n = 1; n <= flatsPerFloor; n++) {
   const flat = `${String(floor).padStart(2,'0')}${String(n).padStart(2,'0')}`;
-  if (data[month][flat] === undefined) data[month][flat] = 0;
+
+  // If no record exists in memory, create default
+  if (data[month][flat] === undefined || data[month][flat] === null) {
+    data[month][flat] = 0;
+  }
 }
+
 
   let paid = 0;
   let floorTotal = 0;
@@ -302,6 +308,7 @@ monthSelect.value=months[new Date().getMonth()];floorSelect.value=1;resetPayment
 </script>
 </body>
 </html>
+
 
 
 
