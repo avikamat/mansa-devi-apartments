@@ -150,35 +150,6 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 
-// Load data from Supabase
-async function loadFromDB(month) {
-  let { data: rows } = await supabase
-    .from('payments')
-    .select('*')
-    .eq('month', month);
-  if (!rows) return;
-
-  rows.forEach(r => {
-    if(!data[month]) data[month]={};
-    data[month][r.flat] = r.status === "paid";
-  });
-}
-
-// Save change to Supabase
-async function saveToDB(flat, month, count, floor) {
-  const payload = { 
-    flat: String(flat), 
-    month: String(month), 
-    floor: Number(floor), 
-    count: Number(count) 
-  };
-
-  const { error } = await window.supabase
-    .from('payments')
-    .upsert(payload, { onConflict: ['flat','month','floor'] });
-
-  if (error) console.error("Supabase save error:", error);
-}
 
  
 </script>
@@ -325,6 +296,7 @@ monthSelect.value=months[new Date().getMonth()];floorSelect.value=1;resetPayment
 </script>
 </body>
 </html>
+
 
 
 
