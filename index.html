@@ -6,69 +6,95 @@
   <title>Society Maintenance Portal</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
 <style>
-body{margin:0;font-family:Arial, sans-serif;display:flex;justify-content:center;padding:0;background:#f7f7f7;}
-.container{max-width:450px;width:100%;padding:15px;}
-.top-section{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;}
-button{flex:1;min-width:120px;padding:12px;font-size:16px;font-weight:bold;cursor:pointer;border-radius:8px;border:none;}
-table{width:100%;border-collapse:collapse;margin-top:15px;}
-th,td{border:1px solid #ddd;padding:10px;font-size:16px;text-align:center;}
-.status-btn{width:100%;padding:10px;border-radius:6px;font-size:15px;font-weight:bold;}
-.paid-btn{background:#2ecc71!important;color:white;}
-.pending-btn{background:#ff6b6b!important;color:white;}
-.table-wrapper{overflow-x:auto;}
-#flatsContainer{padding-bottom:100px;}
-@media(max-width:450px){#flatsContainer{padding-bottom:140px;}}
-#cashModal {
-  z-index: 9999;
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  display: flex;
+  justify-content: center;
+  padding: 0;
+  background: #f7f7f7;
 }
-
-body.modal-open {
-  overflow: hidden; /* stop background scroll */
+.container {
+  max-width: 450px;
+  width: 100%;
+  padding: 15px;
 }
-
+.top-section {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+}
+button {
+  flex: 1;
+  min-width: 120px;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 8px;
+  border: none;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+th, td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  font-size: 16px;
+  text-align: center;
+}
+.status-btn {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: bold;
+}
+.paid-btn {
+  background: #2ecc71 !important;
+  color: white;
+}
+.pending-btn {
+  background: #ff6b6b !important;
+  color: white;
+}
+.table-wrapper {
+  overflow-x: auto;
+}
+.months-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.month-btn {
+  flex: 1;
+  min-width: 90px;
+  padding: 10px;
+  border-radius: 6px;
+  background: #3498db;
+  color: white;
+  border: none;
+  font-weight: bold;
+}
+@media (max-width: 400px) {
+  button, .month-btn {
+    font-size: 14px;
+    padding: 10px;
+  }
+  th, td {
+    font-size: 14px;
+    padding: 8px;
+  }
+}
 </style>
+
 </head>
-
 <body class="bg-gray-100 min-h-screen flex flex-col">
-
-<!-- Payment Option Modal -->
-<div id="paymentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
-  <div class="bg-white p-6 rounded shadow w-80">
-    <h2 class="text-lg font-bold mb-4 text-center">Select Payment Method</h2>
-    <button onclick="openUPIModal()" class="bg-blue-600 text-white p-2 rounded w-full mb-2">Pay via UPI</button>
-    <button onclick="openCashModal()" class="bg-purple-600 text-white p-2 rounded w-full mb-2">Cash Receipt</button>
-    <button onclick="closePaymentModal()" class="bg-gray-400 text-white p-2 rounded w-full">Cancel</button>
-  </div>
-</div>
-
-<!-- UPI Modal -->
-<div id="upiModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
-  <div class="bg-white p-5 rounded shadow w-80">
-    <h2 class="font-bold text-lg mb-3 text-center">UPI Payment</h2>
-
-    <input id="upiName" placeholder="Your Name" class="w-full p-2 border mb-2 rounded">
-    <input id="upiFlat" placeholder="Flat Number (e.g. 0803 or G05)" class="w-full p-2 border mb-2 rounded">
-    <input id="upiFloor" placeholder="Floor (0 for Ground)" class="w-full p-2 border mb-2 rounded">
-
-    <button onclick="processUPI()" class="bg-blue-600 text-white p-2 rounded w-full mb-2">Proceed to Pay ₹100</button>
-    <button onclick="closeUPIModal()" class="bg-gray-400 text-white p-2 rounded w-full">Cancel</button>
-  </div>
-</div>
-
-<!-- Cash Receipt Modal -->
-<div id="cashModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-  <div class="bg-white p-5 rounded shadow w-80">
-    <h2 class="font-bold text-lg mb-3 text-center">Cash Payment Receipt</h2>
-    <input id="custName" placeholder="Your Name" class="w-full p-2 border mb-2 rounded">
-    <input id="flatNo" placeholder="Flat Number (e.g. 0803 or G05)" class="w-full p-2 border mb-2 rounded">
-    <input id="floorNo" placeholder="Floor (0 for Ground)" class="w-full p-2 border mb-2 rounded">
-    <input id="amount" placeholder="Amount (₹)" type="number" class="w-full p-2 border mb-3 rounded">
-    <button onclick="generateCashReceipt()" class="bg-green-600 text-white p-2 rounded w-full mb-2">Generate Receipt</button>
-    <button onclick="closeCashModal()" class="bg-gray-400 text-white p-2 rounded w-full">Cancel</button>
-  </div>
-</div>
 
 <!-- Login Modal -->
 <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
@@ -86,47 +112,50 @@ body.modal-open {
 </header>
 
 <div class="p-4 flex justify-between items-center gap-2 flex-wrap">
-  <button onclick="openLogin()" id="loginBtn" class="bg-gray-700 text-white px-4 py-2 rounded">Admin Login</button>
+  <button onclick="openLogin()" id="loginBtn" class="bg-gray-700 text-white px-4 py-2 rounded">Admin Login / लॉगिन</button>
   <button onclick="logout()" id="logoutBtn" class="hidden bg-red-600 text-white px-4 py-2 rounded">Logout</button>
   <div>
-    <label class="font-semibold">Month: </label>
+    <label class="font-semibold">Month / महीना: </label>
     <select id="monthSelect" class="p-2 border rounded" onchange="resetPayments()"></select>
   </div>
 </div>
 
 <div class="p-4 text-lg font-bold text-blue-800">
-  Total Collection This Month: ₹<span id="totalCollection">0</span>
+  Total Collection This Month / कुल राशि: ₹<span id="totalCollection">0</span>
 </div>
 
 <div class="p-4 flex justify-between items-center flex-wrap gap-2">
   <div>
-    <label class="font-semibold mb-2 block">Select Floor</label>
+    <label class="font-semibold mb-2 block">Select Floor / मंज़िल चुनें</label>
     <select id="floorSelect" class="p-3 border rounded text-lg" onchange="loadFloor()"></select>
   </div>
   <button onclick="exportPDF()" class="bg-green-600 text-white px-4 py-2 rounded">Export PDF</button>
-  <button onclick="openPaymentModal()" class="bg-purple-700 text-white px-4 py-2 rounded">Pay Maintenance</button>
 </div>
 
 <div class="grid grid-cols-2 gap-4 px-4">
-  <div class="bg-green-200 p-3 rounded text-center font-bold">Paid: <span id="paidCount">0</span></div>
-  <div class="bg-red-200 p-3 rounded text-center font-bold">Pending: <span id="pendingCount">0</span></div>
+  <div class="bg-green-200 p-3 rounded text-center font-bold">Paid / जमा: <span id="paidCount">0</span></div>
+  <div class="bg-red-200 p-3 rounded text-center font-bold">Pending / बाकी: <span id="pendingCount">0</span></div>
 </div>
 
 <div class="p-4 text-center font-semibold text-purple-700">
-  Floor Total: ₹<span id="floorTotal">0</span>
+  Floor Total Collected / इस मंज़िल से राशि: ₹<span id="floorTotal">0</span>
 </div>
 
 <div id="flatsContainer" class="grid grid-cols-3 gap-3 p-4 pb-24"></div>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL = "https://qzeytcaxkjarhzrtsaeo.supabase.co";
-const SUPABASE_KEY = "YOUR_KEY";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6ZXl0Y2F4a2phcmh6cnRzYWVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3NTY0NzQsImV4cCI6MjA3NzMzMjQ3NH0.x0Al5WhA1OT3ryFJXPQbQQtf4AyhkOxW08JtOTpJQiM";
+
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+
+
+ 
 </script>
 
 <script>
-// ---- Data Config ----
+
 const totalFloors = 24;
 const flatsPerFloor = 20;
 const fee = 100;
@@ -140,155 +169,174 @@ const monthSelect=document.getElementById('monthSelect');
 months.forEach(m=>{let o=document.createElement('option');o.value=m;o.textContent=m;monthSelect.appendChild(o);});
 
 const floorSelect=document.getElementById('floorSelect');
-let o0=document.createElement('option');o0.value=0;o0.textContent=`Ground`;floorSelect.appendChild(o0);
-for(let f=1;f<=totalFloors;f++){let o=document.createElement('option');o.value=f;o.textContent=`Floor ${f}`;floorSelect.appendChild(o);} 
+// Add Ground Floor
+let g = document.createElement('option');
+g.value = 0;
+g.textContent = "Ground";
+floorSelect.appendChild(g);
 
-// ---- UI & Logic ----
+// Add Floors 1 to 24
+for(let f=1;f<=totalFloors;f++){
+  let o=document.createElement('option');
+  o.value=f;
+  o.textContent=`Floor ${f}`;
+  floorSelect.appendChild(o);
+}
+ 
+// ---------- Supabase DB helpers (correct) ----------
+async function loadFromDB(month) {
+  const { data: rows, error } = await supabase
+
+    .from('payments')
+    .select('*')
+    .eq('month', month);
+
+  if (error) {
+    console.error("Supabase load error:", error);
+    return;
+  }
+
+  data[month] = {};
+  rows.forEach(r => {
+    data[month][String(r.flat)] = Number(r.count) || 0;
+  });
+}
+
+async function saveToDB(flat, month, count, floor) {
+  const payload = { flat: String(flat), month: String(month), floor: Number(floor), count: Number(count) };
+
+  const { error } = await supabase
+
+    .from('payments')
+    .upsert(payload, { onConflict: ['flat','month','floor'] });
+
+  if (error) console.error("Supabase save error:", error);
+}
+// ---------- end DB helpers ----------
+
+
 async function resetPayments(){
   let m = monthSelect.value;
   if(!data[m]) data[m] = {};
+  
+  await loadFromDB(m);
   saveData();
   loadFloor();
   updateTotals();
 }
 
-function loadFloor(){
-  const month=monthSelect.value;
-  if(!data[month])data[month]={};
-  const floor=floorSelect.value;
-  const flatsContainer=document.getElementById('flatsContainer');
-  flatsContainer.innerHTML='';
+async function loadFloor(){
+  const month = monthSelect.value;
+  const floor = floorSelect.value;
 
-  let paid=0,floorTotal=0;
+  await loadFromDB(month);
 
-  for(let n=1;n<=flatsPerFloor;n++){
-    const flat=`${String(floor).padStart(2,'0')}${String(n).padStart(2,'0')}`;
-    const isPaid=data[month][flat]===true;
-    if(isPaid){paid++;floorTotal+=fee;}
+  const flatsContainer = document.getElementById('flatsContainer');
+  flatsContainer.innerHTML = '';
+// Always initialize 20 flats per floor, even if DB empty
+if (!data[month]) data[month] = {};
 
-    flatsContainer.innerHTML+=`
-      <button onclick="togglePaid('${flat}')" class="p-3 rounded font-bold text-sm shadow text-white ${isPaid?'bg-green-600':'bg-red-600'} ${loggedIn?'':'opacity-40 cursor-not-allowed'}">
-        ${flat}<br>${isPaid?'✅ Paid':'❌ Pending'}
+for (let n = 1; n <= flatsPerFloor; n++) {
+  let flat;
+if (floor == 0) {
+  flat = `G${String(n).padStart(2,'0')}`; 
+} else {
+  flat = `${String(floor).padStart(2,'0')}${String(n).padStart(2,'0')}`;
+}
+
+  // If no record exists in memory, create default
+  if (data[month][flat] === undefined || data[month][flat] === null) {
+    data[month][flat] = 0;
+  }
+}
+
+
+  let paid = 0;
+  let floorTotal = 0;
+
+  for (let n = 1; n <= flatsPerFloor; n++) {
+    let flat;
+if (floor == 0) {
+  flat = `G${String(n).padStart(2,'0')}`; 
+} else {
+  flat = `${String(floor).padStart(2,'0')}${String(n).padStart(2,'0')}`;
+}
+
+    const countVal = Number(data[month][flat] || 0);
+    const paidAmount = countVal * fee;
+    const isPaid = paidAmount > 0;
+
+    if (isPaid) { paid++; floorTotal += paidAmount; }
+
+    flatsContainer.innerHTML += `
+      <button onclick="togglePaid('${flat}')"
+        class="p-3 rounded font-bold text-sm shadow text-white ${isPaid ? 'bg-green-600' : 'bg-red-600'} ${loggedIn ? '' : 'opacity-40 cursor-not-allowed'}">
+        ${flat}<br>${isPaid ? '✅ Paid ₹' + paidAmount : '❌ Pending / बाकी'}
       </button>`;
   }
 
-  document.getElementById('paidCount').textContent=paid;
-  document.getElementById('pendingCount').textContent=flatsPerFloor-paid;
-  document.getElementById('floorTotal').textContent=floorTotal;
+  document.getElementById('paidCount').textContent = paid;
+  document.getElementById('pendingCount').textContent = flatsPerFloor - paid;
+  document.getElementById('floorTotal').textContent = floorTotal;
+
   updateTotals();
 }
 
-async function togglePaid(flat){
-  if(!loggedIn) return alert("Login required");
+
+async function togglePaid(flat) {
+  if (!loggedIn) return alert("Login required");
+
   const month = monthSelect.value;
-  data[month][flat] = !data[month][flat];
-  saveData();loadFloor();
+  const floor = floorSelect.value;
+
+  if (!data[month]) data[month] = {};
+
+  let current = Number(data[month][flat] || 0);
+  current = current + 1;
+  if (current > 5) current = 0; // cycles after 5 -> reset
+
+  data[month][flat] = current;
+  try { saveData(); } catch(e){}
+
+  await saveToDB(flat, month, current, floor);
+  loadFloor();
 }
 
-function updateTotals(){
-  const month=monthSelect.value;let total=0;
-  if(data[month])Object.values(data[month]).forEach(p=>{if(p)total+=fee;});
-  document.getElementById('totalCollection').textContent=total;
+
+  // save to online DB
+
+
+
+async function updateTotals(){
+  const month = monthSelect.value;
+  if (!data[month]) await loadFromDB(month);
+
+  let total = 0;
+  Object.values(data[month] || {}).forEach(count => {
+    total += (Number(count) || 0) * fee;
+  });
+
+  document.getElementById('totalCollection').textContent = total;
 }
+
 
 function openLogin(){document.getElementById('loginModal').classList.remove('hidden');}
 function closeLogin(){document.getElementById('loginModal').classList.add('hidden');}
 function checkLogin(){if(document.getElementById('adminPass').value==="mansa1812"){loggedIn=true;closeLogin();document.getElementById('loginBtn').classList.add('hidden');document.getElementById('logoutBtn').classList.remove('hidden');loadFloor();}else alert("Wrong password");}
 function logout(){loggedIn=false;document.getElementById('logoutBtn').classList.add('hidden');document.getElementById('loginBtn').classList.remove('hidden');loadFloor();}
 
-// ----- Payment Buttons -----
-function openPaymentModal(){document.getElementById('paymentModal').classList.remove("hidden");}
-function closePaymentModal(){document.getElementById('paymentModal').classList.add("hidden");}
-function openUPIModal(){closePaymentModal();document.getElementById('upiModal').classList.remove("hidden");}
-function closeUPIModal(){document.getElementById('upiModal').classList.add("hidden");}
-function openCashModal(){closePaymentModal();document.getElementById('cashModal').classList.remove("hidden");}
-function closeCashModal(){document.getElementById('cashModal').classList.add("hidden");}
+async function exportPDF(){const {jsPDF}=window.jspdf;const doc=new jsPDF();const month=monthSelect.value;const monthData=data[month]||{};doc.setFontSize(16);doc.text(`Maintenance Report - ${month}`,10,10);doc.setFontSize(12);
+let y=20;doc.text("Flat No",10,y);doc.text("Status",50,y);y+=8;doc.line(10,y,200,y);y+=5;
+Object.keys(monthData).sort().forEach(flat=>{const status=monthData[flat]?"Paid ✅":"Pending ❌";doc.text(flat,10,y);doc.text(status,50,y);y+=7;if(y>280){doc.addPage();y=20;}});
+doc.save(`Maintenance-${month}.pdf`);}
 
-// ----- UPI Payment Process -----
-function processUPI(){
-  const name=document.getElementById('upiName').value;
-  const flat=document.getElementById('upiFlat').value.toUpperCase();
-  const floor=document.getElementById('upiFloor').value;
-  if(!name||!flat||!floor)return alert("Fill all fields");
-
-  const upiId="43933805949@sbi";
-  const amount="100";
-  const receipt = Date.now();
-
-  const upiUrl = `upi://pay?pa=${upiId}&pn=MansaDeviE3&am=${amount}&cu=INR&tn=Maintenance-${flat}`;
-  window.location.href=upiUrl;
-
-  setTimeout(()=>{
-    const waText = 
-`Hi, I paid ₹100 maintenance.
-Name: ${name}
-Flat: ${flat}
-Floor: ${floor}
-Receipt ID: ${receipt}`;
-    
-    const waGroup = "https://chat.whatsapp.com/Jdr5nVIqp5R1Fvolg0UGHf";
-    window.open(`https://wa.me/?text=${encodeURIComponent(waText)}%0A${encodeURIComponent(waGroup)}`);
-  },2000);
-
-  closeUPIModal();
-}
-
-// ---- Cash PDF ----
-async function generateCashReceipt() {
-  const { jsPDF } = window.jspdf;
-  const name=document.getElementById('custName').value;
-  const flat=document.getElementById('flatNo').value.toUpperCase();
-  const floor=document.getElementById('floorNo').value;
-  const amount=document.getElementById('amount').value;
-  if(!name||!flat||!floor||!amount)return alert("Fill all fields");
-
-  const doc=new jsPDF();
-  doc.setFontSize(18);
-  doc.text("Mansa Devi Apartments - E3",10,10);
-  doc.setFontSize(14);
-  doc.text("Maintenance Cash Receipt",10,20);
-  doc.line(10,23,200,23);
-  const date=new Date().toLocaleDateString();
-  doc.setFontSize(12);
-  doc.text(`Date: ${date}`,10,32);
-  doc.text(`Name: ${name}`,10,40);
-  doc.text(`Flat No: ${flat}`,10,48);
-  doc.text(`Floor: ${floor}`,10,56);
-  doc.text(`Amount Paid: ₹${amount}`,10,64);
-  doc.text("Payment Mode: CASH",10,74);
-  doc.text("Submit cash to Flat 1812 (E3)",10,88);
-  doc.line(10,105,80,105);
-  doc.text("Resident Signature",10,112);
-  doc.save(`Cash-Receipt-${flat}.pdf`);
-  closeCashModal();
-}
-
-// ---- Export PDF ----
-async function exportPDF(){
-  const {jsPDF}=window.jspdf;
-  const doc=new jsPDF();
-  const month=monthSelect.value;
-  const monthData=data[month]||{};
-  doc.setFontSize(16);
-  doc.text(`Maintenance Report - ${month}`,10,10);
-  doc.setFontSize(12);
-  let y=20;
-  doc.text("Flat No",10,y);doc.text("Status",50,y);y+=8;doc.line(10,y,200,y);y+=5;
-  Object.keys(monthData).sort().forEach(flat=>{
-    const status=monthData[flat]?"Paid ✅":"Pending ❌";
-    doc.text(flat,10,y);doc.text(status,50,y);y+=7;
-  });
-  doc.save(`Maintenance-${month}.pdf`);
-}
-
-// ---- Init ----
 monthSelect.value=months[new Date().getMonth()];
 floorSelect.value=0;
 resetPayments();
+
 </script>
 </body>
 </html>
-
 
 
 
