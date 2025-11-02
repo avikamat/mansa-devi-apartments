@@ -111,9 +111,13 @@ button:hover:not(:disabled) {
 <!-- Main Content Card -->
 <div class="main-card-container mx-auto my-0 sm:my-6 bg-white rounded-none sm:rounded-xl shadow-2xl overflow-hidden min-h-screen sm:min-h-0">
 
-<header class="bg-gradient-to-r from-blue-700 to-indigo-600 text-white p-5 text-center shadow-lg">
-  <h1 class="text-2xl font-extrabold tracking-wide">Mansa Devi Apartments</h1>
-  <p class="text-sm opacity-90">Maintenance Portal / प्रशासन</p>
+<header class="bg-gradient-to-r from-blue-700 to-indigo-600 text-white p-5 text-center shadow-lg flex items-center justify-center gap-3">
+  <!-- LOGO ADDED -->
+  <img src="https://placehold.co/40x40/3b82f6/ffffff?text=E3" alt="E3 Logo" class="h-10 w-10 rounded-full border-2 border-white shadow-md">
+  <div>
+    <h1 class="text-2xl font-extrabold tracking-wide">Mansa Devi Apartments</h1>
+    <p class="text-sm opacity-90">Maintenance Portal / प्रशासन</p>
+  </div>
 </header>
 
 <!-- New Payment Button Section -->
@@ -390,18 +394,17 @@ function closeLogin(){document.getElementById('loginModal').classList.add('hidde
 function checkLogin(){if(document.getElementById('adminPass').value==="mansa1812"){loggedIn=true;closeLogin();document.getElementById('loginBtn').classList.add('hidden');document.getElementById('logoutBtn').classList.remove('hidden');loadFloor(); showMessage("Admin logged in successfully!", false);}else showMessage("Wrong password", true);}
 function logout(){loggedIn=false;document.getElementById('logoutBtn').classList.add('hidden');document.getElementById('loginBtn').classList.remove('hidden');loadFloor(); showMessage("Logged out.", false);}
 
-// --- IMPROVED PDF EXPORT FUNCTION ---
+// --- UPDATED PDF EXPORT FUNCTION (Filtered + High Quality Text/Line Drawing) ---
 async function exportPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const month = monthSelect.value;
     const monthData = data[month] || {};
     
-    // Calculate totals and format records
+    // --- 1. Filter and Prepare Records (ONLY PAID FLATS) ---
     let totalPaidAmount = 0;
-    let totalFlats = 0;
     let paidFlats = 0;
-    const records = [];
+    const paidRecords = []; 
     
     Object.keys(monthData).sort((a, b) => {
         // Advanced sorting: G Flats first, then numerically by floor/flat number
@@ -413,25 +416,31 @@ async function exportPDF() {
         const bNum = Number(b.match(/\d+/g).join(''));
         return aNum - bNum;
     }).forEach(flat => {
-        totalFlats++;
         const count = monthData[flat] || 0;
         const amount = count * fee;
-        const status = count > 0 ? `Paid (${count}x)` : "Pending";
-        totalPaidAmount += amount;
-        if (count > 0) paidFlats++;
-        records.push({ flat, amount, status, count });
+        
+        if (count > 0) { // Only include if paid
+            paidFlats++;
+            totalPaidAmount += amount;
+            paidRecords.push({ flat, amount, count });
+        }
     });
 
-    // --- Title and Summary ---
+    if (paidRecords.length === 0) {
+        showMessage(`No payments recorded for ${month} yet.`, true);
+        return;
+    }
+
+    // --- 2. Title and Summary ---
     doc.setFontSize(18).setFont(undefined, 'bold');
-    doc.text(`Maintenance Report - ${month}`, 105, 20, { align: 'center' });
+    doc.text(`Paid Maintenance Report - ${month}`, 105, 20, { align: 'center' });
     
     doc.setFontSize(14).setFont(undefined, 'normal');
     doc.text(`Total Collection: ₹${totalPaidAmount}`, 105, 30, { align: 'center' });
     doc.setFontSize(10).setFont(undefined, 'normal');
-    doc.text(`Paid Flats: ${paidFlats} / ${totalFlats}`, 105, 35, { align: 'center' });
+    doc.text(`Total Paid Flats: ${paidFlats}`, 105, 35, { align: 'center' }); // Only showing paid count
     
-    // --- Table Headers ---
+    // --- 3. Table Headers ---
     let y = 45;
     doc.line(10, y, 200, y); // Top line
     y += 7;
@@ -439,24 +448,24 @@ async function exportPDF() {
     doc.setFontSize(12).setFont(undefined, 'bold');
     doc.text("Flat No.", 15, y);
     doc.text("Payments", 75, y); 
-    doc.text("Status", 125, y);
+    doc.text("Status", 125, y); // Keeping status for clarity
     doc.text("Amount (₹)", 185, y, { align: 'right' });
 
     y += 3;
     doc.line(10, y, 200, y); // Header bottom line
     y += 5;
     
-    // --- Table Data ---
+    // --- 4. Table Data (Paginated) ---
     doc.setFont(undefined, 'normal');
-    records.forEach(record => {
+    paidRecords.forEach(record => {
         doc.setFontSize(10);
         
         doc.text(record.flat, 15, y);
-        doc.text(record.status, 125, y);
+        doc.text("Paid", 125, y); // Status is always Paid here
         doc.text(String(record.amount), 185, y, { align: 'right' });
         
         // Custom logic for the 'Payments' column
-        doc.text(record.count > 0 ? `${record.count} month${record.count > 1 ? 's' : ''}` : '0', 75, y);
+        doc.text(`${record.count} month${record.count > 1 ? 's' : ''}`, 75, y);
         
         y += 6;
         
@@ -465,7 +474,7 @@ async function exportPDF() {
             doc.addPage();
             y = 20; // Start lower on the new page
             doc.setFontSize(10).setFont(undefined, 'italic');
-            doc.text(`Maintenance Report - ${month} (cont.)`, 10, 10);
+            doc.text(`Paid Maintenance Report - ${month} (cont.)`, 10, 10);
             
             // Redraw headers on new page
             y = 25;
@@ -485,9 +494,9 @@ async function exportPDF() {
     
     doc.line(10, y, 200, y); // Final bottom line
     
-    doc.save(`Maintenance-Report-${month}.pdf`);
+    doc.save(`Paid_Maintenance_Report_${month}.pdf`);
 }
-// --- END IMPROVED PDF EXPORT FUNCTION ---
+// --- END UPDATED PDF EXPORT FUNCTION ---
 
 
 // --- New Payment Logic (Unchanged from last version, ensuring backend safety) ---
@@ -558,7 +567,7 @@ function generateCashReceipt(name, flat, floor) {
     const receiptEl = document.getElementById('receiptContainer');
     receiptEl.style.display = 'block';
 
-    html2canvas(receiptEl).then(canvas => {
+    html2canvas(receiptEl, { scale: 2 }).then(canvas => {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('p', 'mm', 'a4');
         const imgData = canvas.toDataURL('image/png');
