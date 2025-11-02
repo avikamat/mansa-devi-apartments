@@ -9,85 +9,26 @@
   <!-- Load html2canvas for capturing receipt as image for PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
+/* Base Styles */
 body {
   margin: 0;
   font-family: 'Inter', sans-serif;
   display: flex;
   justify-content: center;
   padding: 0;
-  background: #f7f7f7;
+  background: #f7f8fc; /* Soft background */
 }
-.container {
-  max-width: 450px;
-  width: 100%;
-  padding: 15px;
-}
-.top-section {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 10px;
-}
-button {
-  flex: 1;
-  min-width: 120px;
-  padding: 12px;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-  border-radius: 8px;
-  border: none;
-  transition: all 0.2s;
+/* General Button Styling for consistent look */
+button:not([id*="loginBtn"], [id*="logoutBtn"], [id*="PayBtn"], [id*="Select"], [id*="exportPDF"]) {
+  /* This targets the flat buttons in the list */
+  transition: background-color 0.15s, transform 0.1s, box-shadow 0.15s;
 }
 button:hover:not(:disabled) {
-  opacity: 0.9;
-  transform: translateY(-1px);
+  opacity: 1; /* Ensure hover opacity is not lower than normal */
+  transform: translateY(-2px); /* Lift effect on hover */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 15px;
-}
-th, td {
-  border: 1px solid #ddd;
-  padding: 10px;
-  font-size: 16px;
-  text-align: center;
-}
-.status-btn {
-  width: 100%;
-  padding: 10px;
-  border-radius: 6px;
-  font-size: 15px;
-  font-weight: bold;
-}
-.paid-btn {
-  background: #2ecc71 !important;
-  color: white;
-}
-.pending-btn {
-  background: #ff6b6b !important;
-  color: white;
-}
-.table-wrapper {
-  overflow-x: auto;
-}
-.months-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
-}
-.month-btn {
-  flex: 1;
-  min-width: 90px;
-  padding: 10px;
-  border-radius: 6px;
-  background: #3498db;
-  color: white;
-  border: none;
-  font-weight: bold;
-}
+
 .receipt-pdf {
     display: none; /* Hidden container for PDF generation */
     padding: 20px;
@@ -96,29 +37,33 @@ th, td {
     border: 1px solid #000;
 }
 
+/* Fix for mobile: Ensure the main content card fills the screen width */
+.main-card-container {
+    width: 100%;
+    max-width: 600px; /* Adjusted max width for better desktop visibility */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Mobile specific grid adjustments for flat buttons */
 @media (max-width: 400px) {
-  button, .month-btn {
-    font-size: 14px;
-    padding: 10px;
-  }
-  th, td {
-    font-size: 14px;
-    padding: 8px;
+  #flatsContainer {
+    grid-template-columns: repeat(2, minmax(0, 1fr)); /* 2 columns on very small screens */
   }
 }
 </style>
 
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col">
+<body class="bg-indigo-50 min-h-screen flex flex-col">
 
 <!-- Message Toast/Modal -->
-<div id="messageToast" class="fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg text-white bg-red-500 z-50 hidden transition-opacity duration-300"></div>
+<div id="messageToast" class="fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-xl text-white bg-red-500 z-50 hidden transition-opacity duration-300"></div>
 
 <!-- Login Modal (Admin) -->
 <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
-  <div class="bg-white p-6 rounded-xl shadow-2xl w-80">
+  <div class="bg-white p-6 rounded-xl shadow-2xl w-11/12 max-w-xs">
     <h2 class="text-xl font-extrabold mb-4 text-center text-blue-700">Admin Login</h2>
-    <input id="adminPass" type="password" placeholder="Enter Password" class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:ring-blue-500 focus:border-blue-500">
+    <input id="adminPass" type="password" placeholder="Enter Password" class="w-full p-3 border border-gray-300 rounded-lg mb-4 shadow-sm focus:ring-blue-500 focus:border-blue-500">
     <button onclick="checkLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg font-bold shadow-md">Login</button>
     <button onclick="closeLogin()" class="w-full mt-3 bg-gray-400 hover:bg-gray-500 text-white p-3 rounded-lg font-bold">Cancel</button>
   </div>
@@ -130,28 +75,32 @@ th, td {
     <h2 id="paymentModalTitle" class="text-xl font-extrabold mb-4 text-center text-green-700">Pay Maintenance</h2>
     
     <div id="paymentForm">
-        <input id="payName" type="text" placeholder="Your Name" class="w-full p-3 border border-gray-300 rounded-lg mb-3">
-        <input id="payFlatNo" type="text" placeholder="Flat No. (e.g., 1812, G05)" class="w-full p-3 border border-gray-300 rounded-lg mb-3">
-        <input id="payFloorNo" type="number" placeholder="Floor No. (e.g., 18, 0)" class="w-full p-3 border border-gray-300 rounded-lg mb-3">
-        <div class="flex items-center bg-gray-100 p-3 rounded-lg mb-4">
-            <span class="font-semibold text-gray-700 mr-2">Amount:</span>
-            <span id="payAmount" class="text-lg font-bold text-green-600">₹100</span>
+        <input id="payName" type="text" placeholder="Your Name" class="w-full p-3 border border-gray-300 rounded-lg mb-3 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+        <input id="payFlatNo" type="text" placeholder="Flat No. (e.g., 1812, G05)" class="w-full p-3 border border-gray-300 rounded-lg mb-3 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+        <input id="payFloorNo" type="number" placeholder="Floor No. (e.g., 18, 0)" class="w-full p-3 border border-gray-300 rounded-lg mb-3 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+        <div class="flex items-center bg-green-50 p-3 rounded-lg mb-4 shadow-inner">
+            <span class="font-semibold text-gray-700 mr-2">Amount Due:</span>
+            <span id="payAmount" class="text-xl font-extrabold text-green-700">₹100</span>
         </div>
         
-        <button id="cashPayBtn" onclick="handlePaymentSelection('cash')" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white p-3 rounded-lg font-bold shadow-md hidden">
+        <button id="cashPayBtn" onclick="handlePaymentSelection('cash')" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white p-3 rounded-lg font-bold shadow-md transition duration-150 hidden">
             Generate Cash Receipt
         </button>
-        <button id="upiPayBtn" onclick="handlePaymentSelection('upi')" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg font-bold shadow-md hidden">
+        <button id="upiPayBtn" onclick="handlePaymentSelection('upi')" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg font-bold shadow-md transition duration-150 hidden">
             Pay ₹100 via UPI
         </button>
     </div>
 
     <div id="upiConfirmation" class="hidden text-center">
-        <p class="text-lg font-semibold text-gray-700 mb-4">
-            Payment link opened! Once paid, click below to notify the group.
+        <p class="text-lg font-semibold text-gray-700 mb-4 bg-yellow-100 p-3 rounded-lg">
+            Payment link opened! Please complete the transaction on your app.
         </p>
-        <button onclick="redirectToWhatsApp()" class="w-full bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg font-bold shadow-lg">
-            ✅ I have Paid! Send WhatsApp Message
+        <button 
+            id="whatsappNotifyBtn" 
+            onclick="redirectToWhatsApp()" 
+            disabled 
+            class="w-full bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg font-bold shadow-lg opacity-50 cursor-not-allowed transition duration-150">
+            (Wait 10 seconds...)
         </button>
     </div>
 
@@ -159,63 +108,82 @@ th, td {
   </div>
 </div>
 
-<header class="bg-blue-700 text-white p-4 text-center shadow w-full">
-  <h1 class="text-2xl font-bold">Mansa Devi Apartments Maintenance</h1>
-  <p class="text-sm">Admin Panel / प्रशासन</p>
+<!-- Main Content Card -->
+<div class="main-card-container mx-auto my-0 sm:my-6 bg-white rounded-none sm:rounded-xl shadow-2xl overflow-hidden min-h-screen sm:min-h-0">
+
+<header class="bg-gradient-to-r from-blue-700 to-indigo-600 text-white p-5 text-center shadow-lg">
+  <h1 class="text-2xl font-extrabold tracking-wide">Mansa Devi Apartments</h1>
+  <p class="text-sm opacity-90">Maintenance Portal / प्रशासन</p>
 </header>
 
-<!-- New Payment Button -->
-<div class="p-4 w-full">
-    <button onclick="openPaymentModal(true)" class="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-3 rounded-xl shadow-lg transition duration-150 transform hover:scale-[1.01]">
-        Pay for Maintenance / भुगतान करें
+<!-- New Payment Button Section -->
+<div class="p-4 border-b border-gray-100">
+    <button onclick="openPaymentModal(true)" class="w-full bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white px-4 py-4 rounded-xl font-extrabold text-lg shadow-lg transition duration-300 transform hover:scale-[1.01]">
+        Pay Maintenance / भुगतान करें
     </button>
 </div>
 
-<div class="p-4 flex justify-between items-center gap-2 flex-wrap w-full">
-  <button onclick="openLogin()" id="loginBtn" class="bg-gray-700 text-white px-4 py-2 rounded">Admin Login / लॉगिन</button>
-  <button onclick="logout()" id="logoutBtn" class="hidden bg-red-600 text-white px-4 py-2 rounded">Logout</button>
+<!-- Admin and Month Selection -->
+<div class="p-4 flex justify-between items-center gap-2 flex-wrap border-b border-gray-100">
+  <div class="flex gap-2">
+    <button onclick="openLogin()" id="loginBtn" class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg text-sm shadow-md">Admin Login</button>
+    <button onclick="logout()" id="logoutBtn" class="hidden bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm shadow-md">Logout</button>
+  </div>
   <div>
-    <label class="font-semibold">Month / महीना: </label>
-    <select id="monthSelect" class="p-2 border rounded" onchange="resetPayments()"></select>
+    <label class="font-semibold text-gray-700">Month:</label>
+    <select id="monthSelect" class="p-2 border border-gray-300 rounded-lg shadow-sm" onchange="resetPayments()"></select>
   </div>
 </div>
 
-<div class="p-4 text-lg font-bold text-blue-800 w-full">
-  Total Collection This Month / कुल राशि: ₹<span id="totalCollection">0</span>
+<!-- Total Collection -->
+<div class="p-4 bg-indigo-50 text-xl font-extrabold text-blue-800 text-center border-b border-gray-200 shadow-inner">
+  Total Collection This Month: ₹<span id="totalCollection">0</span>
 </div>
 
-<div class="p-4 flex justify-between items-center flex-wrap gap-2 w-full">
+<!-- Floor Selection and Export -->
+<div class="p-4 flex justify-between items-center flex-wrap gap-3 border-b border-gray-100">
   <div>
-    <label class="font-semibold mb-2 block">Select Floor / मंज़िल चुनें</label>
-    <select id="floorSelect" class="p-3 border rounded text-lg" onchange="loadFloor()"></select>
+    <label class="font-semibold mb-1 block text-gray-700">Select Floor:</label>
+    <select id="floorSelect" class="p-3 border border-gray-300 rounded-lg text-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" onchange="loadFloor()"></select>
   </div>
-  <button onclick="exportPDF()" class="bg-green-600 text-white px-4 py-2 rounded">Export PDF</button>
+  <button onclick="exportPDF()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg font-bold shadow-md transition duration-150">Export PDF Report</button>
 </div>
 
-<div class="grid grid-cols-2 gap-4 px-4 w-full">
-  <div class="bg-green-200 p-3 rounded text-center font-bold">Paid / जमा: <span id="paidCount">0</span></div>
-  <div class="bg-red-200 p-3 rounded text-center font-bold">Pending / बाकी: <span id="pendingCount">0</span></div>
+<!-- Paid/Pending Counts -->
+<div class="grid grid-cols-2 gap-4 px-4 py-4 border-b border-gray-100">
+  <div class="bg-white border border-green-300 p-4 rounded-xl text-center shadow-lg">
+    <div class="font-bold text-lg text-green-700">Paid / जमा</div>
+    <span id="paidCount" class="text-3xl font-extrabold text-green-600">0</span>
+  </div>
+  <div class="bg-white border border-red-300 p-4 rounded-xl text-center shadow-lg">
+    <div class="font-bold text-lg text-red-700">Pending / बाकी</div>
+    <span id="pendingCount" class="text-3xl font-extrabold text-red-600">0</span>
+  </div>
 </div>
 
-<div class="p-4 text-center font-semibold text-purple-700 w-full">
-  Floor Total Collected / इस मंज़िल से राशि: ₹<span id="floorTotal">0</span>
+<!-- Floor Total -->
+<div class="p-4 text-center font-bold text-lg text-purple-700 bg-purple-50 shadow-inner">
+  Floor Total Collected: ₹<span id="floorTotal">0</span>
 </div>
 
-<div id="flatsContainer" class="grid grid-cols-3 gap-3 p-4 pb-24 w-full"></div>
+<!-- Flats List -->
+<div id="flatsContainer" class="grid grid-cols-3 gap-3 p-4 pb-12"></div>
+
+</div> <!-- End of Main Content Card -->
 
 <!-- Receipt container (Hidden for PDF generation) -->
 <div id="receiptContainer" class="receipt-pdf">
-    <h1 class="text-2xl font-bold text-center mb-4">Maintenance Cash Receipt</h1>
-    <div class="mb-4 text-sm border-t border-b py-2">
+    <h1 class="text-3xl font-bold text-center mb-6 text-blue-800 border-b-2 pb-2">Maintenance Cash Receipt</h1>
+    <div class="mb-6 text-base bg-gray-50 p-3 rounded-lg shadow-inner">
         <p><strong>Date:</strong> <span id="receiptDate"></span></p>
         <p><strong>Receipt ID:</strong> <span id="receiptID"></span></p>
     </div>
     
-    <div class="grid grid-cols-2 gap-2 mb-6">
-        <p><strong>Name:</strong> <span id="receiptName"></span></p>
-        <p><strong>Amount:</strong> ₹<span id="receiptAmount"></span></p>
-        <p><strong>Flat No:</strong> <span id="receiptFlat"></span></p>
-        <p><strong>Floor No:</strong> <span id="receiptFloor"></span></p>
+    <div class="grid grid-cols-2 gap-4 mb-8">
+        <p class="border-b pb-1"><strong>Name:</strong> <span id="receiptName" class="font-semibold"></span></p>
+        <p class="border-b pb-1"><strong>Amount:</strong> <span id="receiptAmount" class="font-extrabold text-red-600">₹</span></p>
+        <p class="border-b pb-1"><strong>Flat No:</strong> <span id="receiptFlat" class="font-semibold"></span></p>
+        <p class="border-b pb-1"><strong>Floor No:</strong> <span id="receiptFloor" class="font-semibold"></span></p>
     </div>
     
     <h2 class="text-xl font-bold mt-6 mb-2 border-t pt-4">Payment Instructions (CASH)</h2>
@@ -223,12 +191,12 @@ th, td {
         Please deposit this cash amount at the following destination:
     </p>
     <p class="text-2xl font-extrabold text-blue-700 mt-2 p-3 bg-blue-100 rounded-lg">
-        Flat No. 1812 E3 (Office)
+        Flat No. 1812 E3
     </p>
     
     <div class="mt-8 text-center border-t pt-4">
         <p class="text-sm">Thank you for your timely payment.</p>
-        <p class="mt-2 text-xl font-extrabold">Mansa Devi Apartments</p>
+        <p class="mt-2 text-xl font-extrabold text-blue-900">Mansa Devi Apartments</p>
     </div>
 </div>
 
@@ -368,9 +336,10 @@ if (floor == 0) {
 
     if (isPaid) { paid++; floorTotal += paidAmount; }
 
+    // Enhanced Button Look for Flats
     flatsContainer.innerHTML += `
       <button onclick="togglePaid('${flat}')"
-        class="p-3 rounded font-bold text-sm shadow text-white ${isPaid ? 'bg-green-600' : 'bg-red-600'} ${loggedIn ? '' : 'opacity-40 cursor-not-allowed'}">
+        class="p-3 rounded-lg text-xs font-bold shadow-md text-white transition duration-150 transform hover:scale-[1.03] ${isPaid ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'} ${loggedIn ? '' : 'opacity-70 cursor-not-allowed'}">
         ${flat}<br>${isPaid ? '✅ Paid ₹' + paidAmount : '❌ Pending / बाकी'}
       </button>`;
   }
@@ -421,13 +390,107 @@ function closeLogin(){document.getElementById('loginModal').classList.add('hidde
 function checkLogin(){if(document.getElementById('adminPass').value==="mansa1812"){loggedIn=true;closeLogin();document.getElementById('loginBtn').classList.add('hidden');document.getElementById('logoutBtn').classList.remove('hidden');loadFloor(); showMessage("Admin logged in successfully!", false);}else showMessage("Wrong password", true);}
 function logout(){loggedIn=false;document.getElementById('logoutBtn').classList.add('hidden');document.getElementById('loginBtn').classList.remove('hidden');loadFloor(); showMessage("Logged out.", false);}
 
-async function exportPDF(){const {jsPDF}=window.jspdf;const doc=new jsPDF();const month=monthSelect.value;const monthData=data[month]||{};doc.setFontSize(16);doc.text(`Maintenance Report - ${month}`,10,10);doc.setFontSize(12);
-let y=20;doc.text("Flat No",10,y);doc.text("Status",50,y);y+=8;doc.line(10,y,200,y);y+=5;
-Object.keys(monthData).sort().forEach(flat=>{const count=monthData[flat] || 0;const amount = count * fee;const status=count?`Paid (${amount}₹)`:"Pending";doc.text(flat,10,y);doc.text(status,50,y);y+=7;if(y>280){doc.addPage();y=20;}});
-doc.save(`Maintenance-${month}.pdf`);}
+// --- IMPROVED PDF EXPORT FUNCTION ---
+async function exportPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const month = monthSelect.value;
+    const monthData = data[month] || {};
+    
+    // Calculate totals and format records
+    let totalPaidAmount = 0;
+    let totalFlats = 0;
+    let paidFlats = 0;
+    const records = [];
+    
+    Object.keys(monthData).sort((a, b) => {
+        // Advanced sorting: G Flats first, then numerically by floor/flat number
+        const aIsG = a.startsWith('G');
+        const bIsG = b.startsWith('G');
+        if (aIsG !== bIsG) return aIsG ? -1 : 1;
+        
+        const aNum = Number(a.match(/\d+/g).join(''));
+        const bNum = Number(b.match(/\d+/g).join(''));
+        return aNum - bNum;
+    }).forEach(flat => {
+        totalFlats++;
+        const count = monthData[flat] || 0;
+        const amount = count * fee;
+        const status = count > 0 ? `Paid (${count}x)` : "Pending";
+        totalPaidAmount += amount;
+        if (count > 0) paidFlats++;
+        records.push({ flat, amount, status, count });
+    });
+
+    // --- Title and Summary ---
+    doc.setFontSize(18).setFont(undefined, 'bold');
+    doc.text(`Maintenance Report - ${month}`, 105, 20, { align: 'center' });
+    
+    doc.setFontSize(14).setFont(undefined, 'normal');
+    doc.text(`Total Collection: ₹${totalPaidAmount}`, 105, 30, { align: 'center' });
+    doc.setFontSize(10).setFont(undefined, 'normal');
+    doc.text(`Paid Flats: ${paidFlats} / ${totalFlats}`, 105, 35, { align: 'center' });
+    
+    // --- Table Headers ---
+    let y = 45;
+    doc.line(10, y, 200, y); // Top line
+    y += 7;
+    
+    doc.setFontSize(12).setFont(undefined, 'bold');
+    doc.text("Flat No.", 15, y);
+    doc.text("Payments", 75, y); 
+    doc.text("Status", 125, y);
+    doc.text("Amount (₹)", 185, y, { align: 'right' });
+
+    y += 3;
+    doc.line(10, y, 200, y); // Header bottom line
+    y += 5;
+    
+    // --- Table Data ---
+    doc.setFont(undefined, 'normal');
+    records.forEach(record => {
+        doc.setFontSize(10);
+        
+        doc.text(record.flat, 15, y);
+        doc.text(record.status, 125, y);
+        doc.text(String(record.amount), 185, y, { align: 'right' });
+        
+        // Custom logic for the 'Payments' column
+        doc.text(record.count > 0 ? `${record.count} month${record.count > 1 ? 's' : ''}` : '0', 75, y);
+        
+        y += 6;
+        
+        // Page break logic
+        if (y > 280) {
+            doc.addPage();
+            y = 20; // Start lower on the new page
+            doc.setFontSize(10).setFont(undefined, 'italic');
+            doc.text(`Maintenance Report - ${month} (cont.)`, 10, 10);
+            
+            // Redraw headers on new page
+            y = 25;
+            doc.line(10, y, 200, y);
+            y += 7;
+            doc.setFontSize(12).setFont(undefined, 'bold');
+            doc.text("Flat No.", 15, y);
+            doc.text("Payments", 75, y);
+            doc.text("Status", 125, y);
+            doc.text("Amount (₹)", 185, y, { align: 'right' });
+            y += 3;
+            doc.line(10, y, 200, y);
+            y += 5;
+            doc.setFont(undefined, 'normal');
+        }
+    });
+    
+    doc.line(10, y, 200, y); // Final bottom line
+    
+    doc.save(`Maintenance-Report-${month}.pdf`);
+}
+// --- END IMPROVED PDF EXPORT FUNCTION ---
 
 
-// --- New Payment Logic ---
+// --- New Payment Logic (Unchanged from last version, ensuring backend safety) ---
 
 // Variable to store payment type selected (cash/upi)
 let selectedPaymentType = null; 
@@ -545,6 +608,32 @@ function handleUPIPayment(name, flat, floor) {
 
     // Store user data temporarily for WhatsApp message
     window.paymentDetails = { name, flat, floor };
+
+    // --- Delay Logic (10 seconds) ---
+    const btn = document.getElementById('whatsappNotifyBtn');
+    const delaySeconds = 10;
+    
+    // Initial state: Disabled and showing countdown text
+    btn.disabled = true;
+    btn.classList.add('opacity-50', 'cursor-not-allowed');
+    
+    let countdown = delaySeconds;
+    btn.innerHTML = `(Wait ${countdown} seconds...)`; // Set initial countdown text
+
+    // Start countdown display using setInterval
+    const timerInterval = setInterval(() => {
+        countdown--;
+        if (countdown > 0) {
+            btn.innerHTML = `(Wait ${countdown} seconds...)`;
+        } else {
+            clearInterval(timerInterval);
+            // Enable the button and update text
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            btn.innerHTML = '✅ I have Paid! Send WhatsApp Message';
+            showMessage("The WhatsApp button is now active!", false);
+        }
+    }, 1000); // Update every 1 second
 }
 
 function redirectToWhatsApp() {
@@ -566,6 +655,8 @@ function redirectToWhatsApp() {
     // Clear temporary data
     window.paymentDetails = {};
 }
+// --- End New Payment Logic ---
+
 
 monthSelect.value=months[new Date().getMonth()];
 floorSelect.value=0;
