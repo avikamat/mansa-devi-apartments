@@ -6,10 +6,12 @@
   <title>Society Maintenance Portal</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- Load html2canvas for capturing receipt as image for PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
+  font-family: 'Inter', sans-serif;
   display: flex;
   justify-content: center;
   padding: 0;
@@ -35,6 +37,11 @@ button {
   cursor: pointer;
   border-radius: 8px;
   border: none;
+  transition: all 0.2s;
+}
+button:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
 }
 table {
   width: 100%;
@@ -81,6 +88,14 @@ th, td {
   border: none;
   font-weight: bold;
 }
+.receipt-pdf {
+    display: none; /* Hidden container for PDF generation */
+    padding: 20px;
+    background-color: white;
+    font-family: sans-serif;
+    border: 1px solid #000;
+}
+
 @media (max-width: 400px) {
   button, .month-btn {
     font-size: 14px;
@@ -96,22 +111,67 @@ th, td {
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col">
 
-<!-- Login Modal -->
+<!-- Message Toast/Modal -->
+<div id="messageToast" class="fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg text-white bg-red-500 z-50 hidden transition-opacity duration-300"></div>
+
+<!-- Login Modal (Admin) -->
 <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
-  <div class="bg-white p-6 rounded shadow w-80">
-    <h2 class="text-lg font-bold mb-3 text-center">Admin Login</h2>
-    <input id="adminPass" type="password" placeholder="Enter Password" class="w-full p-2 border rounded mb-3">
-    <button onclick="checkLogin()" class="w-full bg-blue-600 text-white p-2 rounded">Login</button>
-    <button onclick="closeLogin()" class="w-full mt-2 bg-gray-400 text-white p-2 rounded">Cancel</button>
+  <div class="bg-white p-6 rounded-xl shadow-2xl w-80">
+    <h2 class="text-xl font-extrabold mb-4 text-center text-blue-700">Admin Login</h2>
+    <input id="adminPass" type="password" placeholder="Enter Password" class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:ring-blue-500 focus:border-blue-500">
+    <button onclick="checkLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg font-bold shadow-md">Login</button>
+    <button onclick="closeLogin()" class="w-full mt-3 bg-gray-400 hover:bg-gray-500 text-white p-3 rounded-lg font-bold">Cancel</button>
   </div>
 </div>
 
-<header class="bg-blue-700 text-white p-4 text-center shadow">
+<!-- Payment Modal (User) -->
+<div id="paymentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-40">
+  <div class="bg-white p-6 rounded-xl shadow-2xl w-11/12 max-w-sm">
+    <h2 id="paymentModalTitle" class="text-xl font-extrabold mb-4 text-center text-green-700">Pay Maintenance</h2>
+    
+    <div id="paymentForm">
+        <input id="payName" type="text" placeholder="Your Name" class="w-full p-3 border border-gray-300 rounded-lg mb-3">
+        <input id="payFlatNo" type="text" placeholder="Flat No. (e.g., 1812, G05)" class="w-full p-3 border border-gray-300 rounded-lg mb-3">
+        <input id="payFloorNo" type="number" placeholder="Floor No. (e.g., 18, 0)" class="w-full p-3 border border-gray-300 rounded-lg mb-3">
+        <div class="flex items-center bg-gray-100 p-3 rounded-lg mb-4">
+            <span class="font-semibold text-gray-700 mr-2">Amount:</span>
+            <span id="payAmount" class="text-lg font-bold text-green-600">₹100</span>
+        </div>
+        
+        <button id="cashPayBtn" onclick="handlePaymentSelection('cash')" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white p-3 rounded-lg font-bold shadow-md hidden">
+            Generate Cash Receipt
+        </button>
+        <button id="upiPayBtn" onclick="handlePaymentSelection('upi')" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg font-bold shadow-md hidden">
+            Pay ₹100 via UPI
+        </button>
+    </div>
+
+    <div id="upiConfirmation" class="hidden text-center">
+        <p class="text-lg font-semibold text-gray-700 mb-4">
+            Payment link opened! Once paid, click below to notify the group.
+        </p>
+        <button onclick="redirectToWhatsApp()" class="w-full bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg font-bold shadow-lg">
+            ✅ I have Paid! Send WhatsApp Message
+        </button>
+    </div>
+
+    <button onclick="closePaymentModal()" class="w-full mt-4 bg-gray-400 hover:bg-gray-500 text-white p-3 rounded-lg font-bold">Cancel</button>
+  </div>
+</div>
+
+<header class="bg-blue-700 text-white p-4 text-center shadow w-full">
   <h1 class="text-2xl font-bold">Mansa Devi Apartments Maintenance</h1>
   <p class="text-sm">Admin Panel / प्रशासन</p>
 </header>
 
-<div class="p-4 flex justify-between items-center gap-2 flex-wrap">
+<!-- New Payment Button -->
+<div class="p-4 w-full">
+    <button onclick="openPaymentModal(true)" class="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-3 rounded-xl shadow-lg transition duration-150 transform hover:scale-[1.01]">
+        Pay for Maintenance / भुगतान करें
+    </button>
+</div>
+
+<div class="p-4 flex justify-between items-center gap-2 flex-wrap w-full">
   <button onclick="openLogin()" id="loginBtn" class="bg-gray-700 text-white px-4 py-2 rounded">Admin Login / लॉगिन</button>
   <button onclick="logout()" id="logoutBtn" class="hidden bg-red-600 text-white px-4 py-2 rounded">Logout</button>
   <div>
@@ -120,11 +180,11 @@ th, td {
   </div>
 </div>
 
-<div class="p-4 text-lg font-bold text-blue-800">
+<div class="p-4 text-lg font-bold text-blue-800 w-full">
   Total Collection This Month / कुल राशि: ₹<span id="totalCollection">0</span>
 </div>
 
-<div class="p-4 flex justify-between items-center flex-wrap gap-2">
+<div class="p-4 flex justify-between items-center flex-wrap gap-2 w-full">
   <div>
     <label class="font-semibold mb-2 block">Select Floor / मंज़िल चुनें</label>
     <select id="floorSelect" class="p-3 border rounded text-lg" onchange="loadFloor()"></select>
@@ -132,29 +192,56 @@ th, td {
   <button onclick="exportPDF()" class="bg-green-600 text-white px-4 py-2 rounded">Export PDF</button>
 </div>
 
-<div class="grid grid-cols-2 gap-4 px-4">
+<div class="grid grid-cols-2 gap-4 px-4 w-full">
   <div class="bg-green-200 p-3 rounded text-center font-bold">Paid / जमा: <span id="paidCount">0</span></div>
   <div class="bg-red-200 p-3 rounded text-center font-bold">Pending / बाकी: <span id="pendingCount">0</span></div>
 </div>
 
-<div class="p-4 text-center font-semibold text-purple-700">
+<div class="p-4 text-center font-semibold text-purple-700 w-full">
   Floor Total Collected / इस मंज़िल से राशि: ₹<span id="floorTotal">0</span>
 </div>
 
-<div id="flatsContainer" class="grid grid-cols-3 gap-3 p-4 pb-24"></div>
+<div id="flatsContainer" class="grid grid-cols-3 gap-3 p-4 pb-24 w-full"></div>
+
+<!-- Receipt container (Hidden for PDF generation) -->
+<div id="receiptContainer" class="receipt-pdf">
+    <h1 class="text-2xl font-bold text-center mb-4">Maintenance Cash Receipt</h1>
+    <div class="mb-4 text-sm border-t border-b py-2">
+        <p><strong>Date:</strong> <span id="receiptDate"></span></p>
+        <p><strong>Receipt ID:</strong> <span id="receiptID"></span></p>
+    </div>
+    
+    <div class="grid grid-cols-2 gap-2 mb-6">
+        <p><strong>Name:</strong> <span id="receiptName"></span></p>
+        <p><strong>Amount:</strong> ₹<span id="receiptAmount"></span></p>
+        <p><strong>Flat No:</strong> <span id="receiptFlat"></span></p>
+        <p><strong>Floor No:</strong> <span id="receiptFloor"></span></p>
+    </div>
+    
+    <h2 class="text-xl font-bold mt-6 mb-2 border-t pt-4">Payment Instructions (CASH)</h2>
+    <p class="text-red-600 font-semibold text-lg">
+        Please deposit this cash amount at the following destination:
+    </p>
+    <p class="text-2xl font-extrabold text-blue-700 mt-2 p-3 bg-blue-100 rounded-lg">
+        Flat No. 1812 E3 (Office)
+    </p>
+    
+    <div class="mt-8 text-center border-t pt-4">
+        <p class="text-sm">Thank you for your timely payment.</p>
+        <p class="mt-2 text-xl font-extrabold">Mansa Devi Apartments</p>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+// --- Configuration & Constants ---
 const SUPABASE_URL = "https://qzeytcaxkjarhzrtsaeo.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6ZXl0Y2F4a2phcmh6cnRzYWVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3NTY0NzQsImV4cCI6MjA3NzMzMjQ3NH0.x0Al5WhA1OT3ryFJXPQbQQtf4AyhkOxW08JtOTpJQiM";
+const UPI_ID = "43933805949@sbi"; // !!! REPLACE WITH YOUR ACTUAL UPI ID !!!
+const WHATSAPP_LINK = "https://chat.whatsapp.com/Jdr5nVIqp5R1Fvolg0UGHf?mode=wwt"; // !!! REPLACE WITH YOUR ACTUAL WHATSAPP INVITE LINK !!!
+const UPI_PAYEE_NAME = "Mansa Devi Maint.";
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-
-
- 
-</script>
-
-<script>
 
 const totalFloors = 24;
 const flatsPerFloor = 20;
@@ -183,6 +270,19 @@ for(let f=1;f<=totalFloors;f++){
   floorSelect.appendChild(o);
 }
  
+// ---------- Message/Toast Functions (Replaces alert()) ----------
+const messageToast = document.getElementById('messageToast');
+
+function showMessage(msg, isError = true) {
+    messageToast.textContent = msg;
+    messageToast.classList.remove('hidden');
+    messageToast.classList.toggle('bg-red-500', isError);
+    messageToast.classList.toggle('bg-green-500', !isError);
+    setTimeout(() => {
+        messageToast.classList.add('hidden');
+    }, 3000);
+}
+
 // ---------- Supabase DB helpers (correct) ----------
 async function loadFromDB(month) {
   const { data: rows, error } = await supabase
@@ -284,7 +384,7 @@ if (floor == 0) {
 
 
 async function togglePaid(flat) {
-  if (!loggedIn) return alert("Login required");
+  if (!loggedIn) return showMessage("Login required for Admin actions.", true);
 
   const month = monthSelect.value;
   const floor = floorSelect.value;
@@ -303,10 +403,6 @@ async function togglePaid(flat) {
 }
 
 
-  // save to online DB
-
-
-
 async function updateTotals(){
   const month = monthSelect.value;
   if (!data[month]) await loadFromDB(month);
@@ -322,28 +418,158 @@ async function updateTotals(){
 
 function openLogin(){document.getElementById('loginModal').classList.remove('hidden');}
 function closeLogin(){document.getElementById('loginModal').classList.add('hidden');}
-function checkLogin(){if(document.getElementById('adminPass').value==="mansa1812"){loggedIn=true;closeLogin();document.getElementById('loginBtn').classList.add('hidden');document.getElementById('logoutBtn').classList.remove('hidden');loadFloor();}else alert("Wrong password");}
-function logout(){loggedIn=false;document.getElementById('logoutBtn').classList.add('hidden');document.getElementById('loginBtn').classList.remove('hidden');loadFloor();}
+function checkLogin(){if(document.getElementById('adminPass').value==="mansa1812"){loggedIn=true;closeLogin();document.getElementById('loginBtn').classList.add('hidden');document.getElementById('logoutBtn').classList.remove('hidden');loadFloor(); showMessage("Admin logged in successfully!", false);}else showMessage("Wrong password", true);}
+function logout(){loggedIn=false;document.getElementById('logoutBtn').classList.add('hidden');document.getElementById('loginBtn').classList.remove('hidden');loadFloor(); showMessage("Logged out.", false);}
 
 async function exportPDF(){const {jsPDF}=window.jspdf;const doc=new jsPDF();const month=monthSelect.value;const monthData=data[month]||{};doc.setFontSize(16);doc.text(`Maintenance Report - ${month}`,10,10);doc.setFontSize(12);
 let y=20;doc.text("Flat No",10,y);doc.text("Status",50,y);y+=8;doc.line(10,y,200,y);y+=5;
-Object.keys(monthData).sort().forEach(flat=>{const status=monthData[flat]?"Paid ✅":"Pending ❌";doc.text(flat,10,y);doc.text(status,50,y);y+=7;if(y>280){doc.addPage();y=20;}});
+Object.keys(monthData).sort().forEach(flat=>{const count=monthData[flat] || 0;const amount = count * fee;const status=count?`Paid (${amount}₹)`:"Pending";doc.text(flat,10,y);doc.text(status,50,y);y+=7;if(y>280){doc.addPage();y=20;}});
 doc.save(`Maintenance-${month}.pdf`);}
+
+
+// --- New Payment Logic ---
+
+// Variable to store payment type selected (cash/upi)
+let selectedPaymentType = null; 
+
+function openPaymentModal(isUser=false) {
+    selectedPaymentType = null;
+    document.getElementById('paymentModal').classList.remove('hidden');
+    document.getElementById('paymentModalTitle').textContent = "Select Payment Method";
+    document.getElementById('paymentForm').classList.remove('hidden');
+    document.getElementById('upiConfirmation').classList.add('hidden');
+
+    // Show selection buttons initially (Cash and UPI)
+    document.getElementById('cashPayBtn').classList.remove('hidden');
+    document.getElementById('upiPayBtn').classList.remove('hidden');
+
+    // Clear inputs and set amount
+    document.getElementById('payName').value = '';
+    document.getElementById('payFlatNo').value = '';
+    document.getElementById('payFloorNo').value = '';
+    document.getElementById('payAmount').textContent = `₹${fee}`;
+}
+
+function closePaymentModal() {
+    document.getElementById('paymentModal').classList.add('hidden');
+    // Hide all action buttons and confirmation screen on close
+    document.getElementById('cashPayBtn').classList.add('hidden');
+    document.getElementById('upiPayBtn').classList.add('hidden');
+    document.getElementById('upiConfirmation').classList.add('hidden');
+}
+
+function handlePaymentSelection(type) {
+    selectedPaymentType = type;
+    
+    // Validate inputs
+    const name = document.getElementById('payName').value.trim();
+    const flat = document.getElementById('payFlatNo').value.trim();
+    const floor = document.getElementById('payFloorNo').value.trim();
+    
+    if (!name || !flat || !floor) {
+        showMessage("Please fill in your Name, Flat No., and Floor No.", true);
+        return;
+    }
+
+    // Hide initial selection buttons
+    document.getElementById('cashPayBtn').classList.add('hidden');
+    document.getElementById('upiPayBtn').classList.add('hidden');
+
+    if (type === 'cash') {
+        generateCashReceipt(name, flat, floor);
+    } else if (type === 'upi') {
+        handleUPIPayment(name, flat, floor);
+    }
+}
+
+function generateCashReceipt(name, flat, floor) {
+    // 1. Fill the hidden receipt template
+    document.getElementById('receiptName').textContent = name;
+    document.getElementById('receiptFlat').textContent = flat;
+    document.getElementById('receiptFloor').textContent = floor;
+    document.getElementById('receiptAmount').textContent = fee;
+    document.getElementById('receiptDate').textContent = new Date().toLocaleDateString();
+    document.getElementById('receiptID').textContent = `CASH-${Date.now()}`;
+
+    // 2. Display the receipt container (briefly) and capture it for PDF
+    const receiptEl = document.getElementById('receiptContainer');
+    receiptEl.style.display = 'block';
+
+    html2canvas(receiptEl).then(canvas => {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        const imgData = canvas.toDataURL('image/png');
+        const imgWidth = 210; // A4 width in mm
+        const pageHeight = 295; // A4 height in mm
+        const imgHeight = canvas.height * imgWidth / canvas.width;
+        let heightLeft = imgHeight;
+
+        let position = 0;
+
+        doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+
+        while (heightLeft >= 0) {
+            position = heightLeft - imgHeight;
+            doc.addPage();
+            doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+        }
+
+        doc.save(`Maintenance_Cash_Receipt_${flat}.pdf`);
+        
+        // Hide the receipt template again
+        receiptEl.style.display = 'none';
+
+        showMessage("Cash receipt downloaded! Please make payment at 1812 E3.", false);
+        closePaymentModal();
+    });
+}
+
+function handleUPIPayment(name, flat, floor) {
+    // 1. Construct the UPI deep link
+    const upiUrl = new URL("upi://pay");
+    upiUrl.searchParams.set('pa', UPI_ID);
+    upiUrl.searchParams.set('pn', UPI_PAYEE_NAME);
+    upiUrl.searchParams.set('am', fee); // Pre-entered amount of ₹100
+    upiUrl.searchParams.set('cu', 'INR');
+    upiUrl.searchParams.set('tn', `Maint_Flat_${flat}_${monthSelect.value}`);
+
+    // 2. Open the UPI app
+    window.open(upiUrl.href, '_blank');
+
+    // 3. Show the WhatsApp confirmation step
+    document.getElementById('paymentModalTitle').textContent = "Complete Payment";
+    document.getElementById('paymentForm').classList.add('hidden');
+    document.getElementById('upiConfirmation').classList.remove('hidden');
+
+    // Store user data temporarily for WhatsApp message
+    window.paymentDetails = { name, flat, floor };
+}
+
+function redirectToWhatsApp() {
+    const { name, flat, floor } = window.paymentDetails;
+    const amount = fee;
+    const paymentMode = 'UPI ✅';
+    
+    // Construct the automated message
+    const message = `Hello, I have paid my monthly maintenance.%0A%0AName: ${name}%0AFlat: ${flat}%0AFloor: ${floor}%0AAmount: ₹${amount}%0APayment Mode: ${paymentMode}%0A%0APlease find the screenshot attached here.`;
+    
+    const whatsappUrl = `${WHATSAPP_LINK}&text=${message}`;
+
+    // Redirect to the WhatsApp group invite link with the pre-filled message
+    window.open(whatsappUrl, '_blank');
+    
+    showMessage("Redirecting to WhatsApp!", false);
+    closePaymentModal();
+    
+    // Clear temporary data
+    window.paymentDetails = {};
+}
 
 monthSelect.value=months[new Date().getMonth()];
 floorSelect.value=0;
 resetPayments();
-
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
