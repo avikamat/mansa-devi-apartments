@@ -18,7 +18,7 @@ body {
   background: #f7f8fc; /* Soft background */
 }
 /* General Button Styling for consistent look */
-button:not([id*="loginBtn"], [id*="logoutBtn"], [id*="PayBtn"], [id*="Select"], [id*="exportPDF"], [id*="AnalyticsBtn"]) {
+button:not([id*="loginBtn"], [id*="logoutBtn"], [id*="PayBtn"], [id*="Select"], [id*="exportPDF"], [id*="AnalyticsBtn"], [id*="galleryBtn"]) {
   /* This targets the flat buttons in the list */
   transition: background-color 0.15s, transform 0.1s, box-shadow 0.15s;
 }
@@ -104,6 +104,46 @@ button:hover:not(:disabled) {
   </div>
 </div>
 
+<div id="galleryModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-start justify-center pt-8 hidden z-50 overflow-y-auto">
+  <div class="bg-white p-6 rounded-xl shadow-2xl w-11/12 max-w-lg my-12">
+    <div class="flex justify-between items-center mb-4 border-b pb-2">
+        <h2 class="text-xl font-extrabold text-blue-700">Society Gallery / सोसाइटी गैलरी</h2>
+        <button onclick="closeGallery()" class="text-gray-500 hover:text-gray-900 text-2xl font-bold">&times;</button>
+    </div>
+    
+    <div id="adminUploadArea" class="mb-4 hidden">
+        <button onclick="openMediaUpload()" class="w-full bg-red-500 hover:bg-red-600 text-white p-3 rounded-lg font-bold shadow-md transition duration-150">
+            + Upload Photo/Video (Admin Only) / नया मीडिया जोड़ें
+        </button>
+        <p class="text-xs text-center text-red-700 mt-1">Click the button above to upload media.</p>
+    </div>
+
+    <div id="galleryContent" class="grid grid-cols-1 gap-4">
+        </div>
+    
+    <button onclick="closeGallery()" class="w-full mt-6 bg-gray-400 hover:bg-gray-500 text-white p-3 rounded-lg font-bold">Close / बंद करें</button>
+  </div>
+</div>
+<div id="mediaUploadModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50">
+  <div class="bg-white p-6 rounded-xl shadow-2xl w-11/12 max-w-sm">
+    <h2 class="text-xl font-extrabold mb-4 text-center text-red-700">Upload Gallery Media (Admin)</h2>
+    
+    <label class="block text-sm font-bold text-gray-700 mb-1">Select Media File (Photo/Video):</label>
+    <div class="relative mb-3">
+        <input type="file" id="mediaFileInput" accept="image/*,video/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+        <button class="w-full bg-indigo-500 hover:bg-indigo-600 text-white p-3 rounded-lg font-bold transition duration-150 shadow-md pointer-events-none">
+            <span id="fileNameDisplay">Choose File...</span>
+        </button>
+    </div>
+    
+    <label class="block text-sm font-bold text-gray-700 mb-1">Description (English/Hindi):</label>
+    <input id="mediaDescInput" type="text" placeholder="Short description of the event" class="w-full p-3 border border-gray-300 rounded-lg mb-4 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+
+    <button onclick="saveMedia()" id="uploadMediaBtn" class="w-full bg-red-600 hover:bg-red-700 text-white p-3 rounded-lg font-bold shadow-md transition duration-150">Upload Media</button>
+    <button onclick="closeMediaUpload()" class="w-full mt-3 bg-gray-400 hover:bg-gray-500 text-white p-3 rounded-lg font-bold">Cancel</button>
+    <p class="text-xs text-center text-red-700 mt-2">Uploading large videos may take time.</p>
+  </div>
+</div>
 <div class="main-card-container mx-auto my-0 sm:my-6 bg-white rounded-none sm:rounded-xl shadow-2xl overflow-hidden min-h-screen sm:min-h-0">
 
 <header class="bg-gradient-to-r from-blue-700 to-indigo-600 text-white p-5 text-center shadow-lg flex items-center justify-center gap-3">
@@ -122,6 +162,12 @@ button:hover:not(:disabled) {
 
 <div class="p-4 pt-0 border-b border-gray-100">
   <button id="AnalyticsBtn" onclick="showMonthlyAnalytics()" class="bg-purple-600 hover:bg-purple-700 text-white w-full px-4 py-3 rounded-lg font-bold shadow-md transition duration-150">Monthly Analytics / मासिक विश्लेषण</button>
+</div>
+
+<div class="p-4 pt-0 border-b border-gray-100">
+  <button id="galleryBtn" onclick="openGallery()" class="bg-yellow-600 hover:bg-yellow-700 text-white w-full px-4 py-3 rounded-lg font-bold shadow-md transition duration-150">
+      Gallery / गैलरी
+  </button>
 </div>
 <div class="p-4 flex justify-between items-center gap-2 flex-wrap border-b border-gray-100">
   <div class="flex gap-2">
@@ -163,7 +209,8 @@ button:hover:not(:disabled) {
 
 <div id="flatsContainer" class="grid grid-cols-3 gap-3 p-4 pb-12"></div>
 
-</div> <div id="receiptContainer" class="receipt-pdf">
+</div> 
+<div id="receiptContainer" class="receipt-pdf">
     <h1 class="text-3xl font-bold text-center mb-6 text-blue-800 border-b-2 pb-2">Maintenance Cash Receipt</h1>
     <div class="mb-6 text-base bg-gray-50 p-3 rounded-lg shadow-inner">
         <p><strong>Date:</strong> <span id="receiptDate"></span></p>
@@ -207,8 +254,10 @@ const flatsPerFloor = 20;
 const fee = 100;
 let loggedIn = false;
 
+// --- MAINTENANCE DATA STORE (Unchanged - uses localStorage) ---
 let data = JSON.parse(localStorage.getItem("maintenanceData")) || {};
 function saveData(){ localStorage.setItem("maintenanceData", JSON.stringify(data)); }
+// --- END MAINTENANCE DATA STORE ---
 
 const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const monthSelect=document.getElementById('monthSelect');
@@ -378,10 +427,10 @@ async function updateTotals(){
 
 function openLogin(){document.getElementById('loginModal').classList.remove('hidden');}
 function closeLogin(){document.getElementById('loginModal').classList.add('hidden');}
-function checkLogin(){if(document.getElementById('adminPass').value==="mansa1812"){loggedIn=true;closeLogin();document.getElementById('loginBtn').classList.add('hidden');document.getElementById('logoutBtn').classList.remove('hidden');loadFloor(); showMessage("Admin logged in successfully!", false);}else showMessage("Wrong password", true);}
+function checkLogin(){if(document.getElementById('adminPass').value==="mansa1812"){loggedIn=true;closeLogin();document.getElementById('loginBtn').classList.add('hidden');document.getElementById('logoutBtn').classList.remove('hidden');loadFloor(); showMessage("Admin logged in successfully!", false);document.getElementById('adminPass').value = "";}else showMessage("Wrong password", true);}
 function logout(){loggedIn=false;document.getElementById('logoutBtn').classList.add('hidden');document.getElementById('loginBtn').classList.remove('hidden');loadFloor(); showMessage("Logged out.", false);}
 
-// --- UPDATED PDF EXPORT FUNCTION (Filtered + High Quality Text/Line Drawing) ---
+// --- PDF EXPORT FUNCTION (Unchanged) ---
 async function exportPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
@@ -483,10 +532,10 @@ async function exportPDF() {
     
     doc.save(`Paid_Maintenance_Report_${month}.pdf`);
 }
-// --- END UPDATED PDF EXPORT FUNCTION ---
+// --- END PDF EXPORT FUNCTION ---
 
 
-// --- NEW ANALYTICS FUNCTION (ACCESSIBLE TO ALL) ---
+// --- MONTHLY ANALYTICS FUNCTION (Unchanged) ---
 async function showMonthlyAnalytics() {
   const month = monthSelect.value;
   await loadFromDB(month); // Ensure the data is up-to-date
@@ -532,13 +581,157 @@ async function showMonthlyAnalytics() {
       });
   }
 
-  // Use the built-in browser alert since this is an analytics report
   alert(analyticsMessage);
 }
-// END NEW ANALYTICS FUNCTION
+// END MONTHLY ANALYTICS FUNCTION
+
+// --- GALLERY FUNCTIONS (Updated for Supabase Storage/DB) ---
+
+async function renderGallery() {
+    const galleryContent = document.getElementById('galleryContent');
+    galleryContent.innerHTML = '<p class="text-center text-gray-500 py-4">Loading media...</p>';
+
+    // Fetch media metadata from Supabase DB
+    const { data: galleryItems, error } = await supabase
+        .from('gallery_media')
+        .select('file_url, file_type, description')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        galleryContent.innerHTML = '<p class="text-center text-red-500 py-4">Error loading gallery: ' + error.message + '</p>';
+        return;
+    }
+    
+    galleryContent.innerHTML = '';
+    
+    if (!galleryItems || galleryItems.length === 0) {
+        galleryContent.innerHTML = '<p class="text-center text-gray-500 py-4">No media uploaded yet. / कोई मीडिया अपलोड नहीं किया गया है।</p>';
+        return;
+    }
+
+    galleryItems.forEach(item => {
+        let mediaHtml;
+        const isVideo = item.file_type.startsWith('video');
+
+        if (isVideo) {
+            // Note: If the user uploads a regular video file, this will display the video element.
+            // If they upload a YouTube embed URL, it should be an iframe (Supabase storage won't host iframes, 
+            // but the description could contain a YouTube link that we'd have to parse here - keeping it simple for now)
+            mediaHtml = `
+                <video controls class="w-full h-48 object-cover rounded-lg shadow-lg">
+                    <source src="${item.file_url}" type="${item.file_type}">
+                    Your browser does not support the video tag.
+                </video>
+            `;
+        } else {
+            // Image
+            mediaHtml = `<img src="${item.file_url}" alt="${item.description}" class="w-full h-48 object-cover rounded-lg shadow-lg">`;
+        }
+
+        galleryContent.innerHTML += `
+            <div class="bg-gray-100 p-3 rounded-xl shadow-md">
+                ${mediaHtml}
+                <p class="text-sm font-semibold text-center mt-2 text-gray-800">${item.description}</p>
+            </div>
+        `;
+    });
+}
+
+function openGallery() {
+    renderGallery(); // Load and Render the content for public viewing
+    
+    // Show/Hide admin upload button based on login status
+    const adminArea = document.getElementById('adminUploadArea');
+    if (loggedIn) {
+        adminArea.classList.remove('hidden');
+    } else {
+        adminArea.classList.add('hidden');
+    }
+
+    document.getElementById('galleryModal').classList.remove('hidden');
+}
+
+function closeGallery() {
+    document.getElementById('galleryModal').classList.add('hidden');
+}
+
+// Function to open the upload modal (called by the admin button)
+function openMediaUpload() {
+    if (!loggedIn) return showMessage("Login required for Admin actions.", true);
+    
+    document.getElementById('galleryModal').classList.add('hidden'); // Close gallery first
+    document.getElementById('mediaUploadModal').classList.remove('hidden');
+    
+    // Reset fields on open
+    document.getElementById('mediaFileInput').value = '';
+    document.getElementById('mediaDescInput').value = '';
+    document.getElementById('fileNameDisplay').textContent = 'Choose File...';
+}
+
+// Function to close the upload modal
+function closeMediaUpload() {
+    document.getElementById('mediaUploadModal').classList.add('hidden');
+    openGallery(); // Reopen gallery
+}
+
+// Function to handle file upload and metadata insertion
+async function saveMedia() {
+    const fileInput = document.getElementById('mediaFileInput');
+    const description = document.getElementById('mediaDescInput').value.trim();
+    const file = fileInput.files[0];
+
+    if (!file) return showMessage("Please select a file to upload.", true);
+    if (!description) return showMessage("Please enter a description.", true);
+
+    document.getElementById('uploadMediaBtn').disabled = true;
+    document.getElementById('uploadMediaBtn').textContent = "Uploading... Please Wait...";
+
+    // 1. Upload File to Supabase Storage
+    const filePath = `${Date.now()}_${file.name}`;
+    const { data: storageData, error: storageError } = await supabase.storage
+        .from('media')
+        .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+        });
+
+    if (storageError) {
+        document.getElementById('uploadMediaBtn').disabled = false;
+        document.getElementById('uploadMediaBtn').textContent = "Upload Media";
+        return showMessage("File Upload Error: " + storageError.message, true);
+    }
+    
+    // 2. Get the public URL for the uploaded file
+    const { data: urlData } = supabase.storage
+        .from('media')
+        .getPublicUrl(storageData.path);
+        
+    const fileUrl = urlData.publicUrl;
+    const fileType = file.type;
+
+    // 3. Insert metadata into Supabase DB
+    const { error: dbError } = await supabase
+        .from('gallery_media')
+        .insert([
+            { file_url: fileUrl, file_type: fileType, description: description }
+        ]);
+
+    document.getElementById('uploadMediaBtn').disabled = false;
+    document.getElementById('uploadMediaBtn').textContent = "Upload Media";
+    
+    if (dbError) {
+        // Log the error but show success for the user if the file upload succeeded
+        console.error("DB Insert Error:", dbError.message);
+        return showMessage("Upload successful, but description storage failed. Contact support.", true);
+    }
+
+    closeMediaUpload(); 
+    showMessage("New Gallery item uploaded successfully!", false);
+}
+// --- END GALLERY FUNCTIONS ---
 
 
-// --- Payment Logic (Unchanged from last version, ensuring backend safety) ---
+// --- Payment Logic (Unchanged) ---
 
 // Variable to store payment type selected (cash/upi)
 let selectedPaymentType = null; 
@@ -703,7 +896,23 @@ function redirectToWhatsApp() {
     // Clear temporary data
     window.paymentDetails = {};
 }
-// --- End New Payment Logic ---
+// --- End Payment Logic ---
+
+// --- Initialization Logic ---
+document.addEventListener('DOMContentLoaded', () => {
+    // Listener for file input UX: show file name
+    const fileInput = document.getElementById('mediaFileInput');
+    if (fileInput) {
+        fileInput.addEventListener('change', (event) => {
+            const fileNameDisplay = document.getElementById('fileNameDisplay');
+            if (event.target.files.length > 0) {
+                fileNameDisplay.textContent = event.target.files[0].name;
+            } else {
+                fileNameDisplay.textContent = 'Choose File...';
+            }
+        });
+    }
+});
 
 
 monthSelect.value=months[new Date().getMonth()];
