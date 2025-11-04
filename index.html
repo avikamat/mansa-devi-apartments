@@ -6,7 +6,6 @@
   <title>Society Maintenance Portal</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <!-- Load html2canvas for capturing receipt as image for PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 /* Base Styles */
@@ -19,7 +18,7 @@ body {
   background: #f7f8fc; /* Soft background */
 }
 /* General Button Styling for consistent look */
-button:not([id*="loginBtn"], [id*="logoutBtn"], [id*="PayBtn"], [id*="Select"], [id*="exportPDF"]) {
+button:not([id*="loginBtn"], [id*="logoutBtn"], [id*="PayBtn"], [id*="Select"], [id*="exportPDF"], [id*="AnalyticsBtn"]) {
   /* This targets the flat buttons in the list */
   transition: background-color 0.15s, transform 0.1s, box-shadow 0.15s;
 }
@@ -56,10 +55,8 @@ button:hover:not(:disabled) {
 </head>
 <body class="bg-indigo-50 min-h-screen flex flex-col">
 
-<!-- Message Toast/Modal -->
 <div id="messageToast" class="fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-xl text-white bg-red-500 z-50 hidden transition-opacity duration-300"></div>
 
-<!-- Login Modal (Admin) -->
 <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
   <div class="bg-white p-6 rounded-xl shadow-2xl w-11/12 max-w-xs">
     <h2 class="text-xl font-extrabold mb-4 text-center text-blue-700">Admin Login</h2>
@@ -69,7 +66,6 @@ button:hover:not(:disabled) {
   </div>
 </div>
 
-<!-- Payment Modal (User) -->
 <div id="paymentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-40">
   <div class="bg-white p-6 rounded-xl shadow-2xl w-11/12 max-w-sm">
     <h2 id="paymentModalTitle" class="text-xl font-extrabold mb-4 text-center text-green-700">Pay Maintenance</h2>
@@ -108,11 +104,9 @@ button:hover:not(:disabled) {
   </div>
 </div>
 
-<!-- Main Content Card -->
 <div class="main-card-container mx-auto my-0 sm:my-6 bg-white rounded-none sm:rounded-xl shadow-2xl overflow-hidden min-h-screen sm:min-h-0">
 
 <header class="bg-gradient-to-r from-blue-700 to-indigo-600 text-white p-5 text-center shadow-lg flex items-center justify-center gap-3">
-  <!-- LOGO ADDED -->
   <img src="e3.png" alt="E3 Logo" class="h-10 w-10 rounded-full border-2 border-white shadow-md">
   <div>
     <h1 class="text-2xl font-extrabold tracking-wide">Mansa Devi Apartments</h1>
@@ -120,14 +114,15 @@ button:hover:not(:disabled) {
   </div>
 </header>
 
-<!-- New Payment Button Section -->
 <div class="p-4 border-b border-gray-100">
     <button onclick="openPaymentModal(true)" class="w-full bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white px-4 py-4 rounded-xl font-extrabold text-lg shadow-lg transition duration-300 transform hover:scale-[1.01]">
         Pay Maintenance / भुगतान करें
     </button>
 </div>
 
-<!-- Admin and Month Selection -->
+<div class="p-4 pt-0 border-b border-gray-100">
+  <button id="AnalyticsBtn" onclick="showMonthlyAnalytics()" class="bg-purple-600 hover:bg-purple-700 text-white w-full px-4 py-3 rounded-lg font-bold shadow-md transition duration-150">Monthly Analytics / मासिक विश्लेषण</button>
+</div>
 <div class="p-4 flex justify-between items-center gap-2 flex-wrap border-b border-gray-100">
   <div class="flex gap-2">
     <button onclick="openLogin()" id="loginBtn" class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg text-sm shadow-md">Admin Login</button>
@@ -139,12 +134,10 @@ button:hover:not(:disabled) {
   </div>
 </div>
 
-<!-- Total Collection -->
 <div class="p-4 bg-indigo-50 text-xl font-extrabold text-blue-800 text-center border-b border-gray-200 shadow-inner">
   Total Collection This Month: ₹<span id="totalCollection">0</span>
 </div>
 
-<!-- Floor Selection and Export -->
 <div class="p-4 flex justify-between items-center flex-wrap gap-3 border-b border-gray-100">
   <div>
     <label class="font-semibold mb-1 block text-gray-700">Select Floor:</label>
@@ -153,7 +146,6 @@ button:hover:not(:disabled) {
   <button onclick="exportPDF()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg font-bold shadow-md transition duration-150">Export PDF Report</button>
 </div>
 
-<!-- Paid/Pending Counts -->
 <div class="grid grid-cols-2 gap-4 px-4 py-4 border-b border-gray-100">
   <div class="bg-white border border-green-300 p-4 rounded-xl text-center shadow-lg">
     <div class="font-bold text-lg text-green-700">Paid / जमा</div>
@@ -165,18 +157,13 @@ button:hover:not(:disabled) {
   </div>
 </div>
 
-<!-- Floor Total -->
 <div class="p-4 text-center font-bold text-lg text-purple-700 bg-purple-50 shadow-inner">
   Floor Total Collected: ₹<span id="floorTotal">0</span>
 </div>
 
-<!-- Flats List -->
 <div id="flatsContainer" class="grid grid-cols-3 gap-3 p-4 pb-12"></div>
 
-</div> <!-- End of Main Content Card -->
-
-<!-- Receipt container (Hidden for PDF generation) -->
-<div id="receiptContainer" class="receipt-pdf">
+</div> <div id="receiptContainer" class="receipt-pdf">
     <h1 class="text-3xl font-bold text-center mb-6 text-blue-800 border-b-2 pb-2">Maintenance Cash Receipt</h1>
     <div class="mb-6 text-base bg-gray-50 p-3 rounded-lg shadow-inner">
         <p><strong>Date:</strong> <span id="receiptDate"></span></p>
@@ -499,7 +486,59 @@ async function exportPDF() {
 // --- END UPDATED PDF EXPORT FUNCTION ---
 
 
-// --- New Payment Logic (Unchanged from last version, ensuring backend safety) ---
+// --- NEW ANALYTICS FUNCTION (ACCESSIBLE TO ALL) ---
+async function showMonthlyAnalytics() {
+  const month = monthSelect.value;
+  await loadFromDB(month); // Ensure the data is up-to-date
+
+  const monthData = data[month] || {};
+  const floorCollections = {};
+
+  // 1. Calculate total collection for each floor
+  Object.keys(monthData).forEach(flat => {
+    const countVal = Number(monthData[flat] || 0);
+    const paidAmount = countVal * fee;
+
+    let floorKey;
+    if (flat.startsWith('G')) {
+      floorKey = 'Ground Floor / ग्राउंड फ्लोर';
+    } else {
+      // Extracts the first two digits (the floor number)
+      const floorNum = parseInt(flat.substring(0, 2), 10); 
+      floorKey = `Floor ${floorNum} / मंज़िल ${floorNum}`;
+    }
+    
+    floorCollections[floorKey] = (floorCollections[floorKey] || 0) + paidAmount;
+  });
+
+  // 2. Convert to an array and sort by collection (descending)
+  let sortedFloors = Object.keys(floorCollections).map(key => ({
+    floor: key,
+    total: floorCollections[key]
+  }));
+  
+  sortedFloors.sort((a, b) => b.total - a.total);
+
+  // 3. Format the output message
+  let analyticsMessage = `📊 Monthly Analytics for ${month} / ${month} के लिए मासिक विश्लेषण\n\n`;
+  analyticsMessage += `🏆 Best Paying Floors (Top 5) / सबसे अच्छा भुगतान करने वाली मंज़िलें (शीर्ष 5):\n`;
+  
+  const topFloors = sortedFloors.slice(0, 5);
+  if (topFloors.length === 0) {
+      analyticsMessage += "No payments recorded for this month. / इस महीने कोई भुगतान दर्ज नहीं किया गया है।";
+  } else {
+      topFloors.forEach((item, index) => {
+          analyticsMessage += `${index + 1}. ${item.floor}: ₹${item.total}\n`;
+      });
+  }
+
+  // Use the built-in browser alert since this is an analytics report
+  alert(analyticsMessage);
+}
+// END NEW ANALYTICS FUNCTION
+
+
+// --- Payment Logic (Unchanged from last version, ensuring backend safety) ---
 
 // Variable to store payment type selected (cash/upi)
 let selectedPaymentType = null; 
@@ -673,4 +712,3 @@ resetPayments();
 </script>
 </body>
 </html>
-
